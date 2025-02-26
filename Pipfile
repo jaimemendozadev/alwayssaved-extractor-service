@@ -8,7 +8,6 @@ yt-dlp = "*"
 
 [dev-packages]
 pre-commit = "*"
-pylint = "*"
 isort = "*"
 black = "*"
 flake8 = "*"
