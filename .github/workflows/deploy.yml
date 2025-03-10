@@ -35,8 +35,28 @@ jobs:
       - name: Deploy Extractor Service to EC2
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+          # ✅ Ensure system is updated & required packages are installed
+          sudo yum update -y
+          sudo yum install -y git ffmpeg python3 python3-pip
+
+          # ✅ Install pipenv globally (if not installed)
+          python3 -m pip install --user pipenv
+
+          # ✅ Ensure correct Python environment is being used
+          export PATH="\$HOME/.local/bin:\$PATH"
+
+          # ✅ Navigate to service directory
           cd /home/ec2-user/notecasts-extractor-service
+
+          # ✅ Pull latest code from GitHub
           git pull origin main
+
+          # ✅ Install project dependencies inside virtual environment
           pipenv install
+
+          # ✅ Verify all dependencies (Sanity check)
+          pipenv run python -c "import yt_dlp, whisper, boto3; print('All dependencies installed!')"
+
+          # ✅ Restart service with logs
           nohup pipenv run python service.py > output.log 2>&1 &
           EOF
