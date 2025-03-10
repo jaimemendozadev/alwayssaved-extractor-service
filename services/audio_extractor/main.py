@@ -6,6 +6,7 @@ import os
 import re
 from typing import Any
 
+import boto3
 import yt_dlp
 
 
@@ -26,7 +27,7 @@ def delete_local_file(file_path: str):
         print(f"⚠️ File not found: {abs_path}")
 
 
-def download_audio(youtube_url: str):
+def download_audio(s3Client: boto3.client, youtube_url: str):
     """Main donwload_audio function"""
     # Extract video metadata
     ydl_opts: dict[str, Any] = {"quiet": True}
@@ -58,12 +59,23 @@ def download_audio(youtube_url: str):
     }
 
     try:
+        bucket_name = os.getenv("AWS_BUCKET")
+
+        if bucket_name is None:
+            raise ValueError("AWS_BUCKET environment variable is not set.")
+
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([youtube_url])
 
         print(f"✅ Audio downloaded successfully: {output_path}")
-        delete_local_file(os.path.abspath(f"{output_path}.mp3"))
+        complete_file_name = f"{output_path}.mp3"
+        audio_file = os.path.abspath(complete_file_name)
+
+        s3Client.upload_file(audio_file, bucket_name, complete_file_name)
+        delete_local_file(audio_file)
 
     except yt_dlp.DownloadError as e:
         print(f"❌ Error downloading audio: {e}")
         return None
+    except ValueError as e:
+        print(f"❌ Value Error: {e}")

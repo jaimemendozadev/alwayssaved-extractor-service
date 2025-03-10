@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 yt-dlp = "*"
 boto3 = "*"
+dotenv = "*"
 
 [dev-packages]
 pre-commit = "*"
