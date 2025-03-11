@@ -2,13 +2,13 @@
 Main extractor service file
 """
 
-import os
 
 import boto3
 import whisper
 from dotenv import load_dotenv
 
 from services.audio_extractor.main import download_audio
+from services.audio_transcription.main import transcribe_audio_file
 
 load_dotenv()
 client = boto3.client("s3")
@@ -20,19 +20,23 @@ def run_extractor_service():
         video_title = download_audio("https://www.youtube.com/watch?v=8Ve5SAFPYZ8")
 
         if video_title is None:
-            raise ValueError("")
+            raise ValueError(
+                "Video File was not downloaded. Cannot proceed any further."
+            )
 
-        transcript_name = f"{video_title}.txt"
-        mp3_file_name = f"{video_title}.mp3"
+        # transcript_name = f"{video_title}.txt"
+        # transcript_file = os.path.abspath(transcript_name)
+        # mp3_file_name = f"{video_title}.mp3"
 
-        audio_file = os.path.abspath(mp3_file_name)
+        # audio_file = os.path.abspath(mp3_file_name)
 
-        transcript_file = os.path.abspath(transcript_name)
-        result = whisper_model.transcribe(audio_file, fp16=False)
+        # result = whisper_model.transcribe(audio_file, fp16=False)
 
-        with open(file=f"{output_path}.txt", mode="w", encoding="utf-8") as file:
-            file.write(result["text"])
-            print(f"✅ Audio successfully transcribed: {output_path}")
+        # with open(file=f"{output_path}.txt", mode="w", encoding="utf-8") as file:
+        #     file.write(result["text"])
+        #     print(f"✅ Audio successfully transcribed: {output_path}")
+
+        transcribe_audio_file(video_title, whisper_model)
 
         s3Client.upload_file(transcript_file, bucket_name, transcript_name)
         delete_local_file(audio_file)
