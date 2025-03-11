@@ -6,11 +6,7 @@ import os
 import re
 from typing import Any
 
-import boto3
-import whisper
 import yt_dlp
-
-whisper_model = whisper.load_model("turbo")
 
 
 def sanitize_filename(filename: str) -> str:
@@ -30,7 +26,7 @@ def delete_local_file(file_path: str):
         print(f"⚠️ File not found: {abs_path}")
 
 
-def download_audio(s3Client: boto3.client, youtube_url: str):
+def download_audio(youtube_url: str) -> str | None:
     """Main donwload_audio function"""
     # Extract video metadata
     ydl_opts: dict[str, Any] = {"quiet": True}
@@ -39,9 +35,6 @@ def download_audio(s3Client: boto3.client, youtube_url: str):
             youtube_url, download=False
         )  # Get metadata without downloading
         video_title = sanitize_filename(info.get("title", "unknown_video"))
-
-    # Define output filename using video title
-    output_path = f"{video_title}"
 
     # Download audio with correct filename
     ydl_opts = {
@@ -53,7 +46,7 @@ def download_audio(s3Client: boto3.client, youtube_url: str):
                 "preferredquality": "192",
             }
         ],
-        "outtmpl": output_path,
+        "outtmpl": video_title,
         "quiet": False,
         "noplaylist": True,
         "ignoreerrors": True,
@@ -70,26 +63,21 @@ def download_audio(s3Client: boto3.client, youtube_url: str):
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([youtube_url])
 
-        print(f"✅ Audio downloaded successfully: {output_path}")
-        mp3_file_name = f"{output_path}.mp3"
-        transcript_name = f"{output_path}.txt"
+        mp3_file_name = f"{video_title}.mp3"
+        mp3_abs_path = os.path.abspath(mp3_file_name)
 
-        audio_file = os.path.abspath(mp3_file_name)
-        transcript_file = os.path.abspath(transcript_name)
+        if os.path.exists(mp3_abs_path) is False:
+            raise yt_dlp.DownloadError(
+                "There was a problem downloading the YouTube video."
+            )
 
-        result = whisper_model.transcribe(audio_file, fp16=False)
+        print(f"✅ Audio downloaded successfully: {video_title}")
 
-        with open(file=f"{output_path}.txt", mode="w", encoding="utf-8") as file:
-            file.write(result["text"])
-            print(f"✅ Audio successfully transcribed: {output_path}")
-
-        s3Client.upload_file(transcript_file, bucket_name, transcript_name)
-        delete_local_file(audio_file)
-
-        delete_local_file(transcript_file)
+        return video_title
 
     except yt_dlp.DownloadError as e:
         print(f"❌ Error downloading audio: {e}")
         return None
     except ValueError as e:
         print(f"❌ Value Error: {e}")
+        return None
