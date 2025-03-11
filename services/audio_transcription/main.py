@@ -14,6 +14,6 @@ def transcribe_audio_file(video_title: str, whisper_model: whisper.model) -> str
     with open(file=transcript_name, mode="w", encoding="utf-8") as file:
         file.write(result["text"])
         print(f"✅ Audio successfully transcribed: {video_title}")
-        return video_title
+        return transcript_name
 
     return None
