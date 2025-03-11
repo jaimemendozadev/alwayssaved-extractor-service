@@ -8,10 +8,11 @@ from dotenv import load_dotenv
 
 from services.audio_extractor.main import download_audio
 from services.audio_transcription.main import transcribe_audio_file
+from services.aws.s3 import upload_to_s3
 from services.utils.main import delete_local_file
 
 load_dotenv()
-s3cClient = boto3.client("s3")
+s3_client = boto3.client("s3")
 whisper_model = whisper.load_model("turbo")
 
 
@@ -30,9 +31,15 @@ def run_extractor_service():
             delete_local_file(f"{video_title}.mp3")
             raise ValueError("Audio was not transcribed. Cannot proceed further")
 
-        transcript_abs_path = os.path.abspath(transcript_name)
+        uploaded_file_name = upload_to_s3(s3_client, transcript_name)
 
-        s3Client.upload_file(transcript_abs_path, bucket_name, video_title)
+        if uploaded_file_name is None:
+            delete_local_file(f"{video_title}.mp3")
+            delete_local_file(f"{video_title}.txt")
+            raise ValueError(
+                "Transcript was not uploaded to s3. Cannot proceed further"
+            )
+
         delete_local_file(f"{video_title}.mp3")
         delete_local_file(f"{video_title}.txt")
 

@@ -2,7 +2,7 @@ import os
 
 
 def delete_local_file(file_path: str) -> None:
-    """Deletes the local MP3 file after uploading to S3."""
+    """Deletes the local files."""
     abs_path = os.path.abspath(file_path)
     print(f"🔎 Trying to delete: {abs_path}")
 
