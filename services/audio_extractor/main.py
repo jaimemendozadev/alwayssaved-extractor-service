@@ -4,7 +4,7 @@ audio_extractor service file
 
 import os
 import re
-from typing import Any
+from typing import Any, Dict
 
 import yt_dlp
 
@@ -17,7 +17,7 @@ def sanitize_filename(filename: str) -> str:
 def download_audio(youtube_url: str) -> str | None:
     """Main donwload_audio function"""
     # Extract video metadata
-    ydl_opts: dict[str, Any] = {"quiet": True}
+    ydl_opts: Dict[str, Any] = {"quiet": True}
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(
             youtube_url, download=False
