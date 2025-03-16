@@ -8,6 +8,8 @@ from typing import Any, Dict
 
 import yt_dlp
 
+from services.aws.ssm import get_secret
+
 
 def sanitize_filename(filename: str) -> str:
     """Removes invalid filename characters."""
@@ -43,7 +45,7 @@ def download_audio(youtube_url: str) -> str | None:
     }
 
     try:
-        bucket_name = os.getenv("AWS_BUCKET")
+        bucket_name = get_secret("/notecasts/AWS_BUCKET")
 
         if bucket_name is None:
             raise ValueError("AWS_BUCKET environment variable is not set.")

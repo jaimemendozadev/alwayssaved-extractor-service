@@ -13,7 +13,7 @@ sqs_client = boto3.client("sqs", region_name=AWS_REGION)
 def send_sqs_message(s3_transcript_url: str):
     """Sends a message to the SQS queue indicating the transcript is ready."""
 
-    EXTRACTOR_PUSH_QUEUE_URL = get_secret("EXTRACTOR_PUSH_QUEUE_URL")
+    EXTRACTOR_PUSH_QUEUE_URL = get_secret("/notecasts/EXTRACTOR_PUSH_QUEUE_URL")
 
     if not EXTRACTOR_PUSH_QUEUE_URL:
         print("⚠️ ERROR: SQS Queue URL not set!")
