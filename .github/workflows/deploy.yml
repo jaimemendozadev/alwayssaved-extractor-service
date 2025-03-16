@@ -1,7 +1,7 @@
 name: Deploy Notecasts Extractor Service
 
 on:
-  workflow_dispatch:  # ✅ Manual trigger from GitHub UI
+  workflow_dispatch:  # ✅ Manual trigger
 
 jobs:
   deploy:
@@ -18,53 +18,26 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.7.0  # Adjust to latest stable version
-
-      - name: Initialize Terraform
-        run: terraform init
-
-      - name: Apply Terraform Changes
-        run: terraform apply -auto-approve
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
       - name: Deploy Extractor Service to EC2
         run: |
           ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
-          # ✅ Update system & install dependencies
           sudo yum update -y
           sudo yum install -y git ffmpeg python3 python3-pip
-
-          # ✅ Install pipenv if not already installed
           python3 -m pip install --user pipenv
 
-          # ✅ Ensure correct Python environment is being used
           export PATH="\$HOME/.local/bin:\$PATH"
 
-          # ✅ Create project directory if it doesn't exist
           mkdir -p /home/ec2-user/notecasts-extractor-service
           cd /home/ec2-user/notecasts-extractor-service
 
-          # ✅ Clone repo if not present, otherwise pull latest changes
           if [ ! -d ".git" ]; then
-            git clone git@github.com:${{ github.repository }}.git .
+            git clone git@github.com:your_username/notecasts-extractor-service.git .
           else
             git pull origin main
           fi
 
-          # ✅ Install project dependencies inside virtual environment
           pipenv install
-
-          # ✅ Pre-download the Whisper model & log output
           pipenv run python -c "import whisper; model = whisper.load_model('base'); print('✅ Whisper model loaded and cached!')" > whisper_model.log 2>&1
-
-          # ✅ Verify all dependencies (Sanity check)
           pipenv run python -c "import yt_dlp, whisper, boto3; print('✅ All dependencies installed correctly!')"
-
-          # ✅ Restart service with logs
           nohup pipenv run python service.py > output.log 2>&1 &
           EOF
