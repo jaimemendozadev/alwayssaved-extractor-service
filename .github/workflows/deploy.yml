@@ -51,7 +51,7 @@ jobs:
 
           # ✅ Clone repo if not present, otherwise pull latest changes
           if [ ! -d ".git" ]; then
-            git clone git@github.com:your_username/notecasts-extractor-service.git .
+            git clone git@github.com:${{ github.repository }}.git .
           else
             git pull origin main
           fi
