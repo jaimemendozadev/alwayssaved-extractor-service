@@ -27,12 +27,12 @@ jobs:
           cd /home/ec2-user
 
           # ✅ Set proper permissions for environment
-          export PATH="\$HOME/.local/bin:\$PATH"
+          export PATH="/sbin:/bin:/usr/sbin:/usr/bin:\$HOME/.local/bin:\$PATH"
           export SHELL=/bin/bash
 
-          # ✅ Install dependencies if missing
-          sudo yum update -y
-          sudo yum install -y git ffmpeg python3 python3-pip
+          # ✅ Install dependencies if missing (explicitly using full sudo path)
+          /usr/bin/sudo yum update -y
+          /usr/bin/sudo yum install -y git ffmpeg python3 python3-pip
 
           # ✅ Ensure Pipenv is installed
           python3 -m pip install --user pipenv
