@@ -23,36 +23,38 @@ jobs:
       - name: Deploy Extractor Service to EC2
         run: |
           ssh -i ~/.ssh/notecasts-key.pem -o IdentitiesOnly=yes -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
-          # ✅ Update system & install dependencies
+          # ✅ Switch to the home directory to ensure a clean start
+          cd /home/ec2-user
+
+          # ✅ Set proper permissions for environment
+          export PATH="\$HOME/.local/bin:\$PATH"
+          export SHELL=/bin/bash
+
+          # ✅ Install dependencies if missing
           sudo yum update -y
           sudo yum install -y git ffmpeg python3 python3-pip
 
-          # ✅ Install pipenv if not already installed
+          # ✅ Ensure Pipenv is installed
           python3 -m pip install --user pipenv
-
-          # ✅ Ensure correct Python environment is being used
           export PATH="\$HOME/.local/bin:\$PATH"
 
-          # ✅ Create project directory if it doesn't exist
-          mkdir -p /home/ec2-user/notecasts-extractor-service
-          cd /home/ec2-user/notecasts-extractor-service
+          # ✅ Create project directory if it doesn’t exist
+          mkdir -p notecasts-extractor-service
+          cd notecasts-extractor-service
+
+          # ✅ Verify Git is installed
+          which git || echo "❌ Git is missing!"
 
           # ✅ Clone repo if not present, otherwise pull latest changes
           if [ ! -d ".git" ]; then
-            git clone git@github.com:your_username/notecasts-extractor-service.git .
+            git clone https://github.com/jaimemendozadev/notecasts-extractor-service.git .
           else
             git pull origin main
           fi
 
-          # ✅ Install project dependencies inside virtual environment
+          # ✅ Install dependencies
           pipenv install
 
-          # ✅ Pre-download the Whisper model & log output
-          pipenv run python -c "import whisper; model = whisper.load_model('base'); print('✅ Whisper model loaded and cached!')" > whisper_model.log 2>&1
-
-          # ✅ Verify all dependencies (Sanity check)
-          pipenv run python -c "import yt_dlp, whisper, boto3; print('✅ All dependencies installed correctly!')"
-
-          # ✅ Restart service with logs
+          # ✅ Start the service in the background
           nohup pipenv run python service.py > output.log 2>&1 &
           EOF
