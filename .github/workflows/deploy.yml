@@ -34,7 +34,7 @@ jobs:
           set -e  # Stop on first error
           sudo su - ec2-user << 'INNER_EOF'
 
-          # ✅ Explicitly define PATH so it doesn't break
+          # ✅ Explicitly define PATH so Git is always found
           export PATH="/sbin:/bin:/usr/sbin:/usr/bin:$HOME/.local/bin"
 
           # ✅ Switch to home directory
@@ -44,22 +44,36 @@ jobs:
           /usr/bin/sudo /usr/bin/yum update -y
           /usr/bin/sudo /usr/bin/yum install -y git ffmpeg python3 python3-pip
 
+          # ✅ Verify Git is installed using full path
+          if ! /usr/bin/which git; then
+            echo "❌ Git is missing! Exiting..."
+            exit 1
+          fi
+
           # ✅ Ensure Pipenv is installed
           /usr/bin/python3 -m pip install --user pipenv
           export PATH="\$HOME/.local/bin:\$PATH"
+
+          # ✅ Handle existing directory to prevent clone errors
+          if [ -d "notecasts-extractor-service" ]; then
+            echo "⚠️ Directory already exists. Checking for .git folder..."
+            if [ ! -d "notecasts-extractor-service/.git" ]; then
+              echo "🚨 Partial clone detected! Removing directory..."
+              /bin/rm -rf notecasts-extractor-service
+            fi
+          fi
 
           # ✅ Create project directory if it doesn’t exist
           /bin/mkdir -p notecasts-extractor-service
           cd notecasts-extractor-service
 
-          # ✅ Verify Git is installed using full path
-          /usr/bin/which git || echo "❌ Git is missing!"
-
           # ✅ Clone repo if not present, otherwise pull latest changes using SSH
           if [ ! -d ".git" ]; then
-            /usr/bin/git clone git@github.com:jaimemendozadev/notecasts-extractor-service.git .
+            echo "📂 Cloning repository..."
+            GIT_SSH_COMMAND="ssh -i ~/.ssh/id_rsa -o IdentitiesOnly=yes" /usr/bin/git clone git@github.com:jaimemendozadev/notecasts-extractor-service.git .
           else
-            /usr/bin/git pull origin main
+            echo "🔄 Pulling latest changes..."
+            GIT_SSH_COMMAND="ssh -i ~/.ssh/id_rsa -o IdentitiesOnly=yes" /usr/bin/git pull origin main
           fi
 
           # ✅ Install dependencies using full path
