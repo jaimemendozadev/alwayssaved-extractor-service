@@ -16,11 +16,13 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.AWS_PRIVATE_KEY }}" > ~/.ssh/notecasts-key.pem
           chmod 600 ~/.ssh/notecasts-key.pem
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/notecasts-key.pem
           ssh-keyscan -H ${{ secrets.EC2_PUBLIC_IP }} >> ~/.ssh/known_hosts
 
       - name: Deploy Extractor Service to EC2
         run: |
-          ssh -i ~/.ssh/notecasts-key.pem -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+          ssh -i ~/.ssh/notecasts-key.pem -o IdentitiesOnly=yes -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
           # ✅ Update system & install dependencies
           sudo yum update -y
           sudo yum install -y git ffmpeg python3 python3-pip
