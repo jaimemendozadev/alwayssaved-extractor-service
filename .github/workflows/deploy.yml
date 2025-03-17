@@ -23,39 +23,43 @@ jobs:
       - name: Deploy Extractor Service to EC2
         run: |
           ssh -i ~/.ssh/notecasts-key.pem -o IdentitiesOnly=yes -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
-          # ✅ Source system profile to fix missing commands issue
-          source /etc/profile
-          source ~/.bashrc
-          export PATH="/sbin:/bin:/usr/sbin:/usr/bin:$HOME/.local/bin:$PATH"
+          # 🚀 Force a real login shell
+          set -e  # Stop on first error
+          sudo su - ec2-user << 'INNER_EOF'
 
-          # ✅ Switch to the home directory to ensure a clean start
+          # ✅ Explicitly define PATH so it doesn't break
+          export PATH="/sbin:/bin:/usr/sbin:/usr/bin:$HOME/.local/bin"
+
+          # ✅ Switch to home directory
           cd /home/ec2-user
 
-          # ✅ Install dependencies if missing
-          sudo yum update -y
-          sudo yum install -y git ffmpeg python3 python3-pip
+          # ✅ Install dependencies using full paths
+          /usr/bin/sudo /usr/bin/yum update -y
+          /usr/bin/sudo /usr/bin/yum install -y git ffmpeg python3 python3-pip
 
           # ✅ Ensure Pipenv is installed
-          python3 -m pip install --user pipenv
+          /usr/bin/python3 -m pip install --user pipenv
           export PATH="\$HOME/.local/bin:\$PATH"
 
           # ✅ Create project directory if it doesn’t exist
-          mkdir -p notecasts-extractor-service
+          /bin/mkdir -p notecasts-extractor-service
           cd notecasts-extractor-service
 
-          # ✅ Verify Git is installed
-          which git || echo "❌ Git is missing!"
+          # ✅ Verify Git is installed using full path
+          /usr/bin/which git || echo "❌ Git is missing!"
 
           # ✅ Clone repo if not present, otherwise pull latest changes
           if [ ! -d ".git" ]; then
-            git clone https://github.com/jaimemendozadev/notecasts-extractor-service.git .
+            /usr/bin/git clone https://github.com/jaimemendozadev/notecasts-extractor-service.git .
           else
-            git pull origin main
+            /usr/bin/git pull origin main
           fi
 
-          # ✅ Install dependencies
-          pipenv install
+          # ✅ Install dependencies using full path
+          /home/ec2-user/.local/bin/pipenv install
 
           # ✅ Start the service in the background
-          nohup pipenv run python service.py > output.log 2>&1 &
+          nohup /home/ec2-user/.local/bin/pipenv run python service.py > output.log 2>&1 &
+
+          INNER_EOF
           EOF
