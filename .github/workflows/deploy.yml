@@ -20,6 +20,13 @@ jobs:
           ssh-add ~/.ssh/notecasts-key.pem
           ssh-keyscan -H ${{ secrets.EC2_PUBLIC_IP }} >> ~/.ssh/known_hosts
 
+      - name: Setup SSH for GitHub
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
       - name: Deploy Extractor Service to EC2
         run: |
           ssh -i ~/.ssh/notecasts-key.pem -o IdentitiesOnly=yes -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
@@ -48,9 +55,9 @@ jobs:
           # ✅ Verify Git is installed using full path
           /usr/bin/which git || echo "❌ Git is missing!"
 
-          # ✅ Clone repo if not present, otherwise pull latest changes
+          # ✅ Clone repo if not present, otherwise pull latest changes using SSH
           if [ ! -d ".git" ]; then
-            /usr/bin/git clone https://github.com/jaimemendozadev/notecasts-extractor-service.git .
+            /usr/bin/git clone git@github.com:jaimemendozadev/notecasts-extractor-service.git .
           else
             /usr/bin/git pull origin main
           fi
