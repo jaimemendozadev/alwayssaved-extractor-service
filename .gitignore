@@ -1,6 +1,7 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
+*.pyo
 *$py.class
 
 # C extensions
@@ -130,6 +131,7 @@ celerybeat.pid
 # Environments
 .env
 .venv
+.venv/
 env/
 venv/
 ENV/
@@ -176,8 +178,12 @@ cython_debug/
 # .txt files
 *.txt
 
-# .DS_Store
-.DS_Store
+# System files
+*.DS_Store
 
 # .zip files
 *.zip
+
+# IDE/editor settings
+.vscode/
+.idea/

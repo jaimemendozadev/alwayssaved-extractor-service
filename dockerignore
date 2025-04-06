@@ -1,0 +1,26 @@
+# Ignore Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore virtual environments
+.env/
+.venv/
+venv/
+env/
+
+# Ignore Pipenv metadata (we only need requirements.txt)
+Pipfile
+Pipfile.lock
+
+# Ignore Git files
+.git/
+.gitignore
+
+# Ignore logs and misc
+*.log
+*.DS_Store
+
+# Ignore IDE/editor stuff
+.vscode/
+.idea/
