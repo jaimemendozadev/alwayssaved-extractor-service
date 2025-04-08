@@ -11,7 +11,6 @@ WORKDIR /app
 # Install system dependencies (for yt-dlp and whisper to work)
 RUN apt-get update && apt-get install -y \
     ffmpeg \
-    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
