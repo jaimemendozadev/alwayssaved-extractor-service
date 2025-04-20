@@ -3,7 +3,6 @@ import os
 from typing import Any, Dict
 
 from bson.objectid import ObjectId
-from faker import Faker
 
 
 def delete_local_file(file_path: str):
@@ -20,21 +19,9 @@ def delete_local_file(file_path: str):
         logging.error(f"❌ Error deleting file {abs_path}: {e}")
 
 
-def _generate_fake_user() -> Dict[str, Any]:
-    fake = Faker()
-
-    fake_user = {
-        "_id": ObjectId(),
-        "name": fake.name(),
-        "email": fake.email(),
-    }
-
-    return fake_user
-
-
 def _generate_fake_sqs_msg() -> Dict[str, Any]:
-    fake_user = _generate_fake_user()
 
-    fake_user["video_url"] = "https://www.youtube.com/watch?v=8Ve5SAFPYZ8"
-
-    return fake_user
+    return {
+        "userID": ObjectId(),
+        "videoURL": "https://www.youtube.com/watch?v=8Ve5SAFPYZ8",
+    }
