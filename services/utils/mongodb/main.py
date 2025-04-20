@@ -2,18 +2,23 @@
 MongoDB util functions file.
 """
 
-import os
 from typing import Any, Dict
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
+from services.aws.ssm import get_secret
+
 
 def create_mongodb_instance() -> AsyncIOMotorDatabase:
-    mongo_db_user = os.getenv("MONGO_DB_USER", None)
-    mongo_db_password = os.getenv("MONGO_DB_PASSWORD", None)
-    mongo_db_base_uri = os.getenv("MONGO_DB_BASE_URI", None)
-    mongo_db_name = os.getenv("MONGO_DB_NAME", None)
-    mongo_db_cluster_name = os.getenv("MONGO_DB_CLUSTER_NAME", None)
+    mongo_db_user = get_secret("/notecasts/MONGO_DB_USER")
+
+    mongo_db_password = get_secret("/notecasts/MONGO_DB_PASSWORD")
+
+    mongo_db_base_uri = get_secret("/notecasts/MONGO_DB_BASE_URI")
+
+    mongo_db_name = get_secret("/notecasts/MONGO_DB_NAME")
+
+    mongo_db_cluster_name = get_secret("/notecasts/MONGO_DB_CLUSTER_NAME")
 
     if (
         mongo_db_user is None
