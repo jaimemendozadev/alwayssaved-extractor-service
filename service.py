@@ -22,6 +22,9 @@ whisper_model = whisper.load_model("turbo")
 
 
 def run_extractor_service():
+    mp3_file_name = None
+    transcript_file_name = None
+
     try:
         _fake_sqs_msg = _generate_fake_sqs_msg()
         video_url = _fake_sqs_msg
@@ -32,13 +35,14 @@ def run_extractor_service():
                 "Video File was not downloaded. Cannot proceed any further."
             )
 
-        transcript_name = transcribe_audio_file(video_title, whisper_model)
+        mp3_file_name = f"{video_title}.mp3"
 
-        if transcript_name is None:
-            delete_local_file(f"{video_title}.mp3")
+        transcript_file_name = transcribe_audio_file(video_title, whisper_model)
+
+        if transcript_file_name is None:
             raise ValueError("Audio was not transcribed. Cannot proceed further")
 
-        uploaded_file_name = upload_to_s3(s3_client, transcript_name)
+        uploaded_file_name = upload_to_s3(s3_client, transcript_file_name)
 
         if uploaded_file_name is None:
             raise ValueError(
@@ -49,8 +53,12 @@ def run_extractor_service():
         delete_local_file(f"{video_title}.txt")
 
     except ValueError as e:
-        delete_local_file(f"{video_title}.mp3")
-        delete_local_file(f"{video_title}.txt")
+        if mp3_file_name:
+            delete_local_file(mp3_file_name)
+
+        if transcript_file_name:
+            delete_local_file(transcript_file_name)
+
         print(f"❌ Value Error: {e}")
 
 
