@@ -30,3 +30,11 @@ def _generate_fake_user() -> Dict[str, Any]:
     }
 
     return fake_user
+
+
+def _generate_fake_sqs_msg() -> Dict[str, Any]:
+    fake_user = _generate_fake_user()
+
+    fake_user["video_url"] = "https://www.youtube.com/watch?v=8Ve5SAFPYZ8"
+
+    return fake_user
