@@ -1,34 +1,46 @@
 import os
+from typing import List
 
 import boto3
 import boto3.exceptions
 
-from services.aws.sqs import send_sqs_message
 from services.aws.ssm import get_secret
 
 
-def upload_to_s3(s3_client: boto3.client, file_name) -> None:
+def upload_to_s3(s3_client: boto3.client, base_s3_key, video_title) -> List[str]:
 
     try:
         bucket_name = get_secret("/notecasts/AWS_BUCKET")
         bucket_base_url = get_secret("/notecasts/AWS_BUCKET_BASE_URL")
+
+        uploaded_files = []
 
         if bucket_name is None or bucket_base_url is None:
             raise ValueError(
                 "AWS_BUCKET or BUCKET_BASE_URL environment variables are not set."
             )
 
-        file_abs_path = os.path.abspath(file_name)
-        s3_client.upload_file(file_abs_path, bucket_name, file_name)
+        files_to_upload = [f"{video_title}.txt", f"{video_title}.mp3"]
 
-        send_sqs_message(f"{bucket_base_url}/{file_name}")
+        # file_abs_path = os.path.abspath(file_name)
 
-        return file_name
+        for file in files_to_upload:
+            file_abs_path = os.path.abspath(file)
+            target_s3_key = f"{base_s3_key}/{file}"
+            full_s3_url = f"{bucket_base_url}/{bucket_name}/{target_s3_key}"
+
+            uploaded_files.append(full_s3_url)
+
+            s3_client.upload_file(file_abs_path, bucket_name, target_s3_key)
+
+        # send_sqs_message(f"{bucket_base_url}/{file_name}")
+
+        return uploaded_files
 
     except boto3.exceptions.S3UploadFailedError as e:
         print(f"❌ Error uploading file to s3: {e}")
-        return None
+        return []
 
     except ValueError as e:
         print(f"❌ Value Error: {e}")
-        return None
+        return []

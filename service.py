@@ -2,6 +2,7 @@
 Main extractor service file
 """
 
+import asyncio
 import os
 
 import boto3
@@ -12,6 +13,7 @@ from services.audio_extractor.main import download_audio
 from services.audio_transcription.main import transcribe_audio_file
 from services.aws.s3 import upload_to_s3
 from services.utils.main import _generate_fake_sqs_msg, delete_local_file
+from services.utils.mongodb.main import create_mongodb_instance
 
 load_dotenv()
 
@@ -21,14 +23,34 @@ s3_client = boto3.client("s3", region_name=AWS_REGION)
 whisper_model = whisper.load_model("turbo")
 
 
-def run_extractor_service():
+"""
+# Transcript
+
+{
+  _id: ObjectId,
+  title: String,
+  dateCreated: Date,
+  dateDeleted: Date,
+  videoURL: String,
+  audioURL: String,
+  transcriptURL: String,
+}
+"""
+
+
+async def main():
     mp3_file_name = None
     transcript_file_name = None
 
     try:
+        mongo_db = create_mongodb_instance()
         _fake_sqs_msg = _generate_fake_sqs_msg()
-        video_url = _fake_sqs_msg
-        video_title = download_audio(video_url)
+
+        videoURL = _fake_sqs_msg.get("videoURL")
+        userID = _fake_sqs_msg.get("userID")
+        transcriptID = _fake_sqs_msg.get("transcriptID")
+
+        video_title = download_audio(videoURL)
 
         if video_title is None:
             raise ValueError(
@@ -42,11 +64,13 @@ def run_extractor_service():
         if transcript_file_name is None:
             raise ValueError("Audio was not transcribed. Cannot proceed further")
 
-        uploaded_file_name = upload_to_s3(s3_client, transcript_file_name)
+        base_s3_key = f"{userID}/{transcriptID}"
 
-        if uploaded_file_name is None:
+        uploaded_files = upload_to_s3(s3_client, base_s3_key, video_title)
+
+        if len(uploaded_files) == 0:
             raise ValueError(
-                "Transcript was not uploaded to s3. Cannot proceed further"
+                "Transcript and mp3 files were not uploaded to s3. Cannot proceed further"
             )
 
         delete_local_file(f"{video_title}.mp3")
@@ -62,4 +86,5 @@ def run_extractor_service():
         print(f"❌ Value Error: {e}")
 
 
-run_extractor_service()
+if __name__ == "__main__":
+    asyncio.run(main())
