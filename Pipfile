@@ -8,6 +8,9 @@ yt-dlp = "*"
 boto3 = "*"
 dotenv = "*"
 openai-whisper = "*"
+motor = "*"
+aiohttp = "*"
+asyncio = "*"
 
 [dev-packages]
 pre-commit = "*"
