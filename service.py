@@ -44,11 +44,15 @@ async def main():
 
     try:
         mongo_db = create_mongodb_instance()
+
         _fake_sqs_msg = _generate_fake_sqs_msg()
 
         videoURL = _fake_sqs_msg.get("videoURL")
         userID = _fake_sqs_msg.get("userID")
         transcriptID = _fake_sqs_msg.get("transcriptID")
+
+        print(f"transcriptID  {transcriptID}")
+        print("\n")
 
         video_title = download_audio(videoURL)
 
@@ -68,10 +72,26 @@ async def main():
 
         uploaded_files = upload_to_s3(s3_client, base_s3_key, video_title)
 
-        if len(uploaded_files) == 0:
+        if len(uploaded_files) != 2:
             raise ValueError(
                 "Transcript and mp3 files were not uploaded to s3. Cannot proceed further"
             )
+
+        s3_transcript_url, s3_mp3_url = uploaded_files
+
+        transcript_payload = {
+            "_id": transcriptID,
+            "transcriptURL": s3_transcript_url,
+            "audioURL": s3_mp3_url,
+        }
+        options = {"upsert": True, "return_document": True}
+
+        db_result = await mongo_db["transcripts"].find_one_and_update(
+            {"_id": transcriptID}, {"$set": transcript_payload}, **options
+        )
+
+        print(f"db_result {db_result}")
+        print("\n")
 
         delete_local_file(f"{video_title}.mp3")
         delete_local_file(f"{video_title}.txt")

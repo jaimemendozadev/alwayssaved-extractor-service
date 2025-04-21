@@ -2,8 +2,6 @@
 MongoDB util functions file.
 """
 
-from typing import Any, Dict
-
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 from services.aws.ssm import get_secret
@@ -36,14 +34,4 @@ def create_mongodb_instance() -> AsyncIOMotorDatabase:
 
     # 04-20-25 TODO: Need to validate if DB data persistence works by
     # returning the client or do we have to re-specify the DB name?
-    return client
-
-
-# 04-20-25: Need to refactor with user ID data from SQS.
-async def insert_into_collection(
-    mongodb: AsyncIOMotorDatabase, collection_name: str, data: Dict[str, Any]
-) -> None:
-
-    target_collection = mongodb[collection_name]
-
-    await target_collection.insert_one(data)
+    return client[mongo_db_name]
