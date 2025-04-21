@@ -7,9 +7,9 @@ from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 def WHITESPACE_HANDLER(k):
     return re.sub("\s+", " ", re.sub("\n+", " ", k.strip()))
 
-
 MODEL_NAME = "csebuetnlp/mT5_multilingual_XLSum"
-TOKENIZER = AutoTokenizer.from_pretrained(MODEL_NAME)
+# TOKENIZER = AutoTokenizer.from_pretrained(MODEL_NAME)
+TOKENIZER = AutoTokenizer.from_pretrained(MODEL_NAME, use_fast=False)
 model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
 
 

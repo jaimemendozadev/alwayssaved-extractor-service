@@ -12,6 +12,9 @@ motor = "*"
 aiohttp = "*"
 asyncio = "*"
 transformers = "*"
+blobfile = "*"
+protobuf = "*"
+sentencepiece = "*"
 
 [dev-packages]
 pre-commit = "*"
