@@ -10,6 +10,7 @@ import whisper
 from dotenv import load_dotenv
 
 from services.audio_extractor.main import download_audio
+from services.audio_summary.main import summarize_transcript
 from services.audio_transcription.main import transcribe_audio_file
 from services.aws.s3 import upload_to_s3
 from services.utils.main import _generate_fake_sqs_msg, delete_local_file
@@ -67,6 +68,8 @@ async def main():
 
         if transcript_file_name is None:
             raise ValueError("Audio was not transcribed. Cannot proceed further")
+
+        transcript_summary = summarize_transcript(video_title)
 
         base_s3_key = f"{userID}/{transcriptID}"
 
