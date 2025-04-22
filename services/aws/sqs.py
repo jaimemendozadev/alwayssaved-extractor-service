@@ -1,30 +1,42 @@
 import json
 import os
+from typing import TypedDict
 
 import boto3
+from bson import ObjectId
 
 from services.aws.ssm import get_secret
+
+
+class EmbeddingPayload(TypedDict):
+    _id: ObjectId
+    transcriptURL: str
+
 
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 
 sqs_client = boto3.client("sqs", region_name=AWS_REGION)
 
 
-def send_sqs_message(s3_transcript_url: str):
-    """Sends a message to the SQS queue indicating the transcript is ready."""
+def get_sqs_messages():
+    """Gets messages from SQS extractor_push_queue to kick off transcription/summarization process."""
+    pass
 
-    EXTRACTOR_PUSH_QUEUE_URL = get_secret("/notecasts/EXTRACTOR_PUSH_QUEUE_URL")
 
-    if not EXTRACTOR_PUSH_QUEUE_URL:
+def send_embedding_sqs_message(sqs_payload: EmbeddingPayload):
+    """Sends a message to the SQS embedding_push_queue indicating the transcript is ready for embedding process."""
+
+    embedding_push_queue_url = get_secret("/notecasts/EMBEDDING_PUSH_QUEUE_URL")
+
+    if not embedding_push_queue_url:
         print("⚠️ ERROR: SQS Queue URL not set!")
         return
 
-    message_body = {"s3_transcript_url": s3_transcript_url}
-
     try:
         response = sqs_client.send_message(
-            QueueUrl=EXTRACTOR_PUSH_QUEUE_URL, MessageBody=json.dumps(message_body)
+            QueueUrl=embedding_push_queue_url, MessageBody=json.dumps(sqs_payload)
         )
         print(f"✅ SQS Message Sent! Message ID: {response['MessageId']}")
+
     except Exception as e:
-        print(f"❌ ERROR sending SQS message: {e}")
+        print(f"❌ ERROR sending SQS embedding_push message: {e}")

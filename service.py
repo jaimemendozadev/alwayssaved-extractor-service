@@ -14,6 +14,7 @@ from services.audio_extractor.main import download_audio
 from services.audio_summary.main import summarize_transcript
 from services.audio_transcription.main import transcribe_audio_file
 from services.aws.s3 import upload_to_s3
+from services.aws.sqs import send_embedding_sqs_message
 from services.utils.main import _generate_fake_sqs_msg, delete_local_file
 from services.utils.mongodb.main import create_mongodb_instance
 
@@ -107,6 +108,15 @@ async def main():
 
         print(f"db_result {db_result}")
         print("\n")
+
+        # 6) Send SQS Message to embedding queue.
+
+        embedding_payload = {
+            "_id": transcript_id,
+            "transcriptURL": s3_transcript_url,
+        }
+
+        send_embedding_sqs_message(embedding_payload)
 
         delete_local_file(f"{video_title}.mp3")
         delete_local_file(f"{video_title}.txt")
