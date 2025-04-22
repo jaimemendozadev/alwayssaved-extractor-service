@@ -3,6 +3,7 @@ import os
 from typing import TypedDict
 
 import boto3
+from botocore.exceptions import BotoCoreError, ClientError
 from bson import ObjectId
 
 from services.aws.ssm import get_secret
@@ -14,13 +15,7 @@ class EmbeddingPayload(TypedDict):
 
 
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-
 sqs_client = boto3.client("sqs", region_name=AWS_REGION)
-
-
-def get_sqs_messages():
-    """Gets messages from SQS extractor_push_queue to kick off transcription/summarization process."""
-    pass
 
 
 def send_embedding_sqs_message(sqs_payload: EmbeddingPayload):
@@ -33,10 +28,28 @@ def send_embedding_sqs_message(sqs_payload: EmbeddingPayload):
         return
 
     try:
-        response = sqs_client.send_message(
-            QueueUrl=embedding_push_queue_url, MessageBody=json.dumps(sqs_payload)
+        # Serialize _id if it's an ObjectId
+        payload_json = json.dumps(
+            {
+                **sqs_payload,
+                "_id": str(sqs_payload["_id"]),
+            }
         )
+
+        response = sqs_client.send_message(
+            QueueUrl=embedding_push_queue_url,
+            MessageBody=payload_json,
+        )
+
         print(f"✅ SQS Message Sent! Message ID: {response['MessageId']}")
 
+    except ClientError as e:
+        print(
+            f"❌ AWS Client Error sending SQS message: {e.response['Error']['Message']}"
+        )
+
+    except BotoCoreError as e:
+        print(f"❌ Boto3 Internal Error: {str(e)}")
+
     except Exception as e:
-        print(f"❌ ERROR sending SQS embedding_push message: {e}")
+        print(f"❌ Unexpected Error: {str(e)}")
