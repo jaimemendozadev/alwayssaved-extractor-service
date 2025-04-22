@@ -35,6 +35,7 @@ whisper_model = whisper.load_model("turbo")
   videoURL: String,
   audioURL: String,
   transcriptURL: String,
+  transcriptSummary: String
 }
 """
 
@@ -55,6 +56,7 @@ async def main():
         print(f"transcriptID  {transcriptID}")
         print("\n")
 
+        # 1) Download the audio file.
         video_title = download_audio(videoURL)
 
         if video_title is None:
@@ -64,15 +66,15 @@ async def main():
 
         mp3_file_name = f"{video_title}.mp3"
 
+        # 2) Transcribe audio file.
         transcript_file_name = transcribe_audio_file(video_title, whisper_model)
 
         if transcript_file_name is None:
             raise ValueError("Audio was not transcribed. Cannot proceed further")
 
-        transcript_summary = summarize_transcript(video_title)
-
         base_s3_key = f"{userID}/{transcriptID}"
 
+        # 3) Upload the mp3 audio and transcript to s3.
         uploaded_files = upload_to_s3(s3_client, base_s3_key, video_title)
 
         if len(uploaded_files) != 2:
@@ -82,13 +84,18 @@ async def main():
 
         s3_transcript_url, s3_mp3_url = uploaded_files
 
+        # 4) Generate a summary of the transcript.
+        transcript_summary = summarize_transcript(video_title)
+
         transcript_payload = {
             "_id": transcriptID,
             "transcriptURL": s3_transcript_url,
             "audioURL": s3_mp3_url,
+            "transcriptSummary": transcript_summary,
         }
         options = {"upsert": True, "return_document": True}
 
+        # 5) Update MongoDB and delete local files.
         db_result = await mongo_db["transcripts"].find_one_and_update(
             {"_id": transcriptID}, {"$set": transcript_payload}, **options
         )

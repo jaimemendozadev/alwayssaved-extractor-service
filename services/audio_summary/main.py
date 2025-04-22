@@ -11,10 +11,11 @@ model = BartForConditionalGeneration.from_pretrained(MODEL_NAME)
 def whitespace_handler(k):
     return re.sub("\s+", " ", re.sub("\n+", " ", k.strip()))
 
-def summarize_transcript(video_title: str) -> str | None:
+
+def summarize_transcript(video_title: str) -> str:
 
     if video_title is None:
-        return None
+        return ""
 
     transcript_file_name = f"{video_title}.txt"
     file_abs_path = os.path.abspath(transcript_file_name)
@@ -32,8 +33,9 @@ def summarize_transcript(video_title: str) -> str | None:
     summary_ids = model.generate(
         inputs["input_ids"],
         num_beams=4,
-        max_length=180,
-        no_repeat_ngram_size=2,
+        max_length=300,  # ⬆️ allows more content
+        min_length=120,  # ⬆️ avoids 2-3 sentence summaries
+        no_repeat_ngram_size=3,  # ⬆️ smoother output
         early_stopping=True,
     )
     summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
