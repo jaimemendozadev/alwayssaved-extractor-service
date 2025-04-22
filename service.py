@@ -4,6 +4,7 @@ Main extractor service file
 
 import asyncio
 import os
+import time
 
 import boto3
 import whisper
@@ -24,22 +25,6 @@ s3_client = boto3.client("s3", region_name=AWS_REGION)
 whisper_model = whisper.load_model("turbo")
 
 
-"""
-# Transcript
-
-{
-  _id: ObjectId,
-  title: String,
-  dateCreated: Date,
-  dateDeleted: Date,
-  videoURL: String,
-  audioURL: String,
-  transcriptURL: String,
-  transcriptSummary: String
-}
-"""
-
-
 async def main():
     mp3_file_name = None
     transcript_file_name = None
@@ -49,15 +34,21 @@ async def main():
 
         _fake_sqs_msg = _generate_fake_sqs_msg()
 
-        videoURL = _fake_sqs_msg.get("videoURL")
-        userID = _fake_sqs_msg.get("userID")
-        transcriptID = _fake_sqs_msg.get("transcriptID")
+        video_url = _fake_sqs_msg.get("videoURL")
 
-        print(f"transcriptID  {transcriptID}")
-        print("\n")
+        user_id = _fake_sqs_msg.get("userID")
+
+        transcript_id = _fake_sqs_msg.get("transcriptID")
 
         # 1) Download the audio file.
-        video_title = download_audio(videoURL)
+        audio_download_start_time = time.time()
+
+        video_title = download_audio(video_url)
+
+        audio_download_end_time = time.time()
+        audio_elapsed_time = audio_download_end_time - audio_download_start_time
+        print(f"Elapsed time for audio download: {audio_elapsed_time} seconds")
+        print("\n")
 
         if video_title is None:
             raise ValueError(
@@ -67,12 +58,19 @@ async def main():
         mp3_file_name = f"{video_title}.mp3"
 
         # 2) Transcribe audio file.
+        transcribe_start_time = time.time()
+
         transcript_file_name = transcribe_audio_file(video_title, whisper_model)
+
+        transcribe_end_time = time.time()
+        transcribe_elapsed_time = transcribe_end_time - transcribe_start_time
+        print(f"Elapsed time for transcribing: {transcribe_elapsed_time} seconds")
+        print("\n")
 
         if transcript_file_name is None:
             raise ValueError("Audio was not transcribed. Cannot proceed further")
 
-        base_s3_key = f"{userID}/{transcriptID}"
+        base_s3_key = f"{user_id}/{transcript_id}"
 
         # 3) Upload the mp3 audio and transcript to s3.
         uploaded_files = upload_to_s3(s3_client, base_s3_key, video_title)
@@ -85,10 +83,17 @@ async def main():
         s3_transcript_url, s3_mp3_url = uploaded_files
 
         # 4) Generate a summary of the transcript.
+        summarize_start_time = time.time()
+
         transcript_summary = summarize_transcript(video_title)
 
+        summarize_end_time = time.time()
+        summarize_elapsed_time = summarize_end_time - summarize_start_time
+        print(f"Elapsed time for summarizing: {summarize_elapsed_time} seconds")
+        print("\n")
+
         transcript_payload = {
-            "_id": transcriptID,
+            "_id": transcript_id,
             "transcriptURL": s3_transcript_url,
             "audioURL": s3_mp3_url,
             "transcriptSummary": transcript_summary,
@@ -97,7 +102,7 @@ async def main():
 
         # 5) Update MongoDB and delete local files.
         db_result = await mongo_db["transcripts"].find_one_and_update(
-            {"_id": transcriptID}, {"$set": transcript_payload}, **options
+            {"_id": transcript_id}, {"$set": transcript_payload}, **options
         )
 
         print(f"db_result {db_result}")
