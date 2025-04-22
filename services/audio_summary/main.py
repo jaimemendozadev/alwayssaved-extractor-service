@@ -1,17 +1,15 @@
 import os
 import re
 
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import BartForConditionalGeneration, BartTokenizer
+
+MODEL_NAME = "facebook/bart-large-cnn"
+tokenizer = BartTokenizer.from_pretrained(MODEL_NAME)
+model = BartForConditionalGeneration.from_pretrained(MODEL_NAME)
 
 
-def WHITESPACE_HANDLER(k):
+def whitespace_handler(k):
     return re.sub("\s+", " ", re.sub("\n+", " ", k.strip()))
-
-MODEL_NAME = "csebuetnlp/mT5_multilingual_XLSum"
-# TOKENIZER = AutoTokenizer.from_pretrained(MODEL_NAME)
-TOKENIZER = AutoTokenizer.from_pretrained(MODEL_NAME, use_fast=False)
-model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
-
 
 def summarize_transcript(video_title: str) -> str | None:
 
@@ -21,21 +19,24 @@ def summarize_transcript(video_title: str) -> str | None:
     transcript_file_name = f"{video_title}.txt"
     file_abs_path = os.path.abspath(transcript_file_name)
 
-    input_ids = TOKENIZER(
-        [WHITESPACE_HANDLER(file_abs_path)],
+    with open(file_abs_path, "r", encoding="utf-8") as f:
+        transcript_text = f.read()
+
+    inputs = tokenizer(
+        [whitespace_handler(transcript_text)],
         return_tensors="pt",
         padding="max_length",
         truncation=True,
-        max_length=512,
-    )["input_ids"]
-
-    output_ids = model.generate(
-        input_ids=input_ids, max_length=84, no_repeat_ngram_size=2, num_beams=4
-    )[0]
-
-    summary = TOKENIZER.decode(
-        output_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False
+        max_length=1024,
     )
+    summary_ids = model.generate(
+        inputs["input_ids"],
+        num_beams=4,
+        max_length=180,
+        no_repeat_ngram_size=2,
+        early_stopping=True,
+    )
+    summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
 
     print(f"transcript summary {summary}")
     print("\n")

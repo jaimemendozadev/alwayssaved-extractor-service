@@ -24,5 +24,5 @@ def _generate_fake_sqs_msg() -> Dict[str, Any]:
     return {
         "userID": ObjectId(),
         "transcriptID": ObjectId(),
-        "videoURL": "https://www.youtube.com/watch?v=8Ve5SAFPYZ8",
+        "videoURL": "https://www.youtube.com/watch?v=ItLFpYha6Wc",
     }
