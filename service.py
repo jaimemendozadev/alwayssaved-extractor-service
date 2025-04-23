@@ -109,7 +109,9 @@ async def main():
         print(f"db_result {db_result}")
         print("\n")
 
-        # 6) Send SQS Message to embedding queue.
+        # 6) Delete local files & send SQS Message to embedding queue.
+        delete_local_file(f"{video_title}.mp3")
+        delete_local_file(f"{video_title}.txt")
 
         embedding_payload = {
             "_id": transcript_id,
@@ -117,9 +119,6 @@ async def main():
         }
 
         send_embedding_sqs_message(embedding_payload)
-
-        delete_local_file(f"{video_title}.mp3")
-        delete_local_file(f"{video_title}.txt")
 
     except ValueError as e:
         if mp3_file_name:
