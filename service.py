@@ -10,7 +10,7 @@ import boto3
 import whisper
 from dotenv import load_dotenv
 
-from services.audio_extractor.main import download_audio
+from services.audio_extractor.main import download_video_or_audio
 from services.audio_summary.main import summarize_transcript
 from services.audio_transcription.main import transcribe_audio_file
 from services.aws.s3 import upload_to_s3
@@ -24,6 +24,8 @@ AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 
 s3_client = boto3.client("s3", region_name=AWS_REGION)
 whisper_model = whisper.load_model("turbo")
+
+DEV_MODE = os.getenv("DEV_MODE", False)
 
 
 async def main():
@@ -44,7 +46,8 @@ async def main():
         # 1) Download the audio file.
         audio_download_start_time = time.time()
 
-        video_title = download_audio(video_url)
+        # video_title = download_audio(video_url, True)
+        video_title = download_video_or_audio(video_url, DEV_MODE)
 
         audio_download_end_time = time.time()
         audio_elapsed_time = audio_download_end_time - audio_download_start_time
