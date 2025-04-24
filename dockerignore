@@ -24,3 +24,6 @@ Pipfile.lock
 # Ignore IDE/editor stuff
 .vscode/
 .idea/
+
+# Ignore .mp4 files
+*.mp4
