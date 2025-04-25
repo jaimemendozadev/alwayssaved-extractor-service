@@ -1,27 +1,41 @@
-# Start from the official Python 3.11 slim image
-FROM python:3.11-slim
+# Start from NVIDIA's CUDA + Ubuntu 20.04 base image
+FROM nvidia/cuda:11.8.0-runtime-ubuntu20.04
 
 # Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV TRANSFORMERS_CACHE=/app/.cache
 
-# Set the working directory in the container
-WORKDIR /app
-
-# Install system dependencies (for yt-dlp and whisper to work)
-RUN apt-get update && apt-get install -y \
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 \
+    python3.11-venv \
+    python3-pip \
     ffmpeg \
+    git \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Set Python 3.11 as default
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1
 
-# Copy the rest of your application code
+# Set working directory
+WORKDIR /app
+
+# Copy requirements file first
+COPY requirements.txt .
+
+# Upgrade pip and install Python dependencies
+RUN python -m pip install --upgrade pip && \
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy rest of the application
 COPY . .
 
-# Expose any port if necessary (optional)
+# Expose ports if needed (optional)
 # EXPOSE 8000
 
-# Run the application
+# Default command
 CMD ["python", "service.py"]
