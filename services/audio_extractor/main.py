@@ -68,9 +68,9 @@ def download_video_or_audio(video_url: str, dev_mode: bool = False) -> str | Non
                 output_path = info.get("requested_downloads", [{}])[0].get("filepath")
                 video_title = info.get("title", "unknown_video")
 
-            print(f"\nvideo_title: {video_title}")
-            print(f"\noutput_path: {output_path}")
-            print(f"\nos.path.exists(output_path): {os.path.exists(output_path)}\n")
+            print(f"video_title: {video_title}")
+            print(f"output_path: {output_path}")
+            print(f"os.path.exists(output_path): {os.path.exists(output_path)}")
 
             if not output_path or not os.path.exists(output_path):
                 raise yt_dlp.DownloadError(f"❌ Full MP4 not downloaded: {output_path}")

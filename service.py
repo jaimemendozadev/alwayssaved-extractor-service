@@ -46,13 +46,16 @@ async def main():
         # 1) Download the audio file.
         audio_download_start_time = time.time()
 
-        # video_title = download_audio(video_url, True)
+        print(f"download_video_or_audio start at: {audio_download_start_time}")
         video_title = download_video_or_audio(video_url, DEV_MODE)
+
+        print(f"video_title from download_video_or_audio: {video_title}")
 
         audio_download_end_time = time.time()
         audio_elapsed_time = audio_download_end_time - audio_download_start_time
         print(f"Elapsed time for audio download: {audio_elapsed_time} seconds")
-        print("\n")
+
+        # Logs stop here... why? 🤔
 
         if video_title is None:
             raise ValueError(
@@ -64,12 +67,12 @@ async def main():
         # 2) Transcribe audio file.
         transcribe_start_time = time.time()
 
+        print(f"transcribe_audio_file start at: {transcribe_start_time}")
         transcript_file_name = transcribe_audio_file(video_title, whisper_model)
 
         transcribe_end_time = time.time()
         transcribe_elapsed_time = transcribe_end_time - transcribe_start_time
         print(f"Elapsed time for transcribing: {transcribe_elapsed_time} seconds")
-        print("\n")
 
         if transcript_file_name is None:
             raise ValueError("Audio was not transcribed. Cannot proceed further")
@@ -94,7 +97,6 @@ async def main():
         summarize_end_time = time.time()
         summarize_elapsed_time = summarize_end_time - summarize_start_time
         print(f"Elapsed time for summarizing: {summarize_elapsed_time} seconds")
-        print("\n")
 
         transcript_payload = {
             "_id": transcript_id,
@@ -110,7 +112,6 @@ async def main():
         )
 
         print(f"db_result {db_result}")
-        print("\n")
 
         # 6) Delete local files & send SQS Message to embedding queue.
         delete_local_file(f"{video_title}.mp3")
