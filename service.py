@@ -25,7 +25,7 @@ AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 s3_client = boto3.client("s3", region_name=AWS_REGION)
 whisper_model = whisper.load_model("turbo")
 
-DEV_MODE = os.getenv("DEV_MODE", False)
+DEV_MODE = bool(os.getenv("DEV_MODE", False))
 
 
 async def main():
