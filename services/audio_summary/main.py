@@ -1,11 +1,17 @@
 import os
 import re
 
+import torch
 from transformers import BartForConditionalGeneration, BartTokenizer
 
 MODEL_NAME = "facebook/bart-large-cnn"
 tokenizer = BartTokenizer.from_pretrained(MODEL_NAME)
-model = BartForConditionalGeneration.from_pretrained(MODEL_NAME)
+
+# Detect device
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model = BartForConditionalGeneration.from_pretrained(MODEL_NAME).to(
+    device
+)  # Move model to GPU if available
 
 
 def whitespace_handler(k):

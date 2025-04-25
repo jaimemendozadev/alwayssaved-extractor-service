@@ -7,6 +7,7 @@ import os
 import time
 
 import boto3
+import torch
 import whisper
 from dotenv import load_dotenv
 
@@ -23,7 +24,10 @@ load_dotenv()
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 
 s3_client = boto3.client("s3", region_name=AWS_REGION)
-whisper_model = whisper.load_model("turbo")
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+whisper_model = whisper.load_model("turbo", device=DEVICE)
 
 DEV_MODE = bool(os.getenv("DEV_MODE", False))
 
