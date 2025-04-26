@@ -31,8 +31,6 @@ def upload_to_s3(s3_client: boto3.client, base_s3_key, video_title) -> Tuple[str
 
             s3_client.upload_file(file_abs_path, bucket_name, target_s3_key)
 
-        # send_sqs_message(f"{bucket_base_url}/{file_name}")
-
         return tuple(uploaded_files)
 
     except boto3.exceptions.S3UploadFailedError as e:

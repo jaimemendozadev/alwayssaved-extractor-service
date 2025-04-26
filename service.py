@@ -54,17 +54,12 @@ async def main():
 
         # 1) Download the audio file.
         audio_download_start_time = time.time()
-
-        print(f"download_video_or_audio start at: {audio_download_start_time}")
         video_title = download_video_or_audio(video_url, PYTHON_MODE)
-
-        print(f"video_title from download_video_or_audio: {video_title}")
 
         audio_download_end_time = time.time()
         audio_elapsed_time = audio_download_end_time - audio_download_start_time
-        print(f"Elapsed time for audio download: {audio_elapsed_time} seconds")
 
-        # Logs stop here... why? 🤔
+        print(f"Elapsed time for audio download: {audio_elapsed_time} seconds")
 
         if video_title is None:
             raise ValueError(
@@ -75,8 +70,6 @@ async def main():
 
         # 2) Transcribe audio file.
         transcribe_start_time = time.time()
-
-        print(f"transcribe_audio_file start at: {transcribe_start_time}")
         transcript_file_name = transcribe_audio_file(video_title, whisper_model)
 
         transcribe_end_time = time.time()
@@ -100,7 +93,6 @@ async def main():
 
         # 4) Generate a summary of the transcript.
         summarize_start_time = time.time()
-
         transcript_summary = summarize_transcript(video_title)
 
         summarize_end_time = time.time()
@@ -116,11 +108,9 @@ async def main():
         options = {"upsert": True, "return_document": True}
 
         # 5) Update MongoDB and delete local files.
-        db_result = await mongo_db["transcripts"].find_one_and_update(
+        await mongo_db["transcripts"].find_one_and_update(
             {"_id": transcript_id}, {"$set": transcript_payload}, **options
         )
-
-        print(f"db_result {db_result}")
 
         # 6) Delete local files & send SQS Message to embedding queue.
         delete_local_file(f"{video_title}.mp3")

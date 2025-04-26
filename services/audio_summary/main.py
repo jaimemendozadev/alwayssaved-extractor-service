@@ -51,7 +51,4 @@ def summarize_transcript(video_title: str) -> str:
     )
     summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
 
-    print(f"transcript summary {summary}")
-    print("\n")
-
     return summary

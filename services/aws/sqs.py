@@ -19,7 +19,7 @@ sqs_client = boto3.client("sqs", region_name=AWS_REGION)
 
 
 def send_embedding_sqs_message(sqs_payload: EmbeddingPayload):
-    """Sends a message to the SQS embedding_push_queue indicating the transcript is ready for embedding process."""
+    """Sends a message to the SQS embedding_push_queue indicating the transcript is ready for the embedding process."""
 
     embedding_push_queue_url = get_secret("/notecasts/EMBEDDING_PUSH_QUEUE_URL")
 
