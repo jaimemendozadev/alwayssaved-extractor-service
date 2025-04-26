@@ -11,37 +11,41 @@ import torch
 import whisper
 from dotenv import load_dotenv
 
-from services.audio_extractor.main import download_video_or_audio
+from services.audio_extractor.main import delete_local_file, download_video_or_audio
 from services.audio_summary.main import summarize_transcript
 from services.audio_transcription.main import transcribe_audio_file
 from services.aws.s3 import upload_to_s3
 from services.aws.sqs import send_embedding_sqs_message
-from services.utils.main import _generate_fake_sqs_msg, delete_local_file
+from services.utils.main import (
+    _generate_fake_sqs_msg,
+)
 from services.utils.mongodb.main import create_mongodb_instance
 
 load_dotenv()
 
-AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
+# IMPORTANT: REMEMBER TO SET PYTHON_MODE in .env to 'production' when creating Docker image
+PYTHON_MODE = os.getenv("PYTHON_MODE", "production")
 
-s3_client = boto3.client("s3", region_name=AWS_REGION)
+AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
+s3_client = boto3.client("s3", region_name=AWS_REGION)
+
 whisper_model = whisper.load_model("turbo", device=DEVICE)
 
-DEV_MODE = bool(os.getenv("DEV_MODE", False))
 
 
 async def main():
     mp3_file_name = None
     transcript_file_name = None
 
-    print(f"DEV_MODE: ${DEV_MODE}")
+    print(f"PYTHON_MODE: ${PYTHON_MODE}")
 
     try:
         mongo_db = create_mongodb_instance()
 
-        _fake_sqs_msg = _generate_fake_sqs_msg()
+        _fake_sqs_msg = _generate_fake_sqs_msg(PYTHON_MODE)
 
         video_url = _fake_sqs_msg.get("videoURL")
 
