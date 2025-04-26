@@ -8,9 +8,9 @@ MODEL_NAME = "facebook/bart-large-cnn"
 tokenizer = BartTokenizer.from_pretrained(MODEL_NAME)
 
 # Detect device
-device = "cuda" if torch.cuda.is_available() else "cpu"
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 model = BartForConditionalGeneration.from_pretrained(MODEL_NAME).to(
-    device
+    DEVICE
 )  # Move model to GPU if available
 
 
@@ -36,6 +36,11 @@ def summarize_transcript(video_title: str) -> str:
         truncation=True,
         max_length=1024,
     )
+
+    # 🧠 Only move tensors if running on CUDA
+    if DEVICE == "cuda":
+        inputs = {key: value.to(DEVICE) for key, value in inputs.items()}
+
     summary_ids = model.generate(
         inputs["input_ids"],
         num_beams=4,
