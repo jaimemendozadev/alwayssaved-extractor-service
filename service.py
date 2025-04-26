@@ -35,7 +35,6 @@ s3_client = boto3.client("s3", region_name=AWS_REGION)
 whisper_model = whisper.load_model("turbo", device=DEVICE)
 
 
-
 async def main():
     mp3_file_name = None
     transcript_file_name = None
@@ -57,7 +56,7 @@ async def main():
         audio_download_start_time = time.time()
 
         print(f"download_video_or_audio start at: {audio_download_start_time}")
-        video_title = download_video_or_audio(video_url, DEV_MODE)
+        video_title = download_video_or_audio(video_url, PYTHON_MODE)
 
         print(f"video_title from download_video_or_audio: {video_title}")
 

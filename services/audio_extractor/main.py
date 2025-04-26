@@ -55,14 +55,16 @@ def convert_mp4_to_mp3(mp4_path: str, video_title: str) -> str:
     return sanitized_title
 
 
-def download_video_or_audio(video_url: str, dev_mode: bool = False) -> str | None:
+def download_video_or_audio(
+    video_url: str, python_mode: str = "production"
+) -> str | None:
     """
-    DEV MODE: Download full .mp4, convert to .mp3, return path to .mp3
-    PROD MODE: Download .mp3 directly using yt_dlp
+    development MODE: Download full .mp4, convert to .mp3, return path to .mp3
+    production MODE: Download .mp3 directly using yt_dlp
     """
 
     try:
-        if dev_mode:
+        if python_mode == "development":
             print("📥 [DEV MODE] Downloading full MP4 from YouTube...")
 
             ydl_opts: Dict[str, Any] = {
@@ -82,10 +84,6 @@ def download_video_or_audio(video_url: str, dev_mode: bool = False) -> str | Non
                 # This gives you the actual, real filepath yt-dlp saved to
                 output_path = info.get("requested_downloads", [{}])[0].get("filepath")
                 video_title = info.get("title", "unknown_video")
-
-            print(f"video_title: {video_title}")
-            print(f"output_path: {output_path}")
-            print(f"os.path.exists(output_path): {os.path.exists(output_path)}")
 
             if not output_path or not os.path.exists(output_path):
                 raise yt_dlp.DownloadError(f"❌ Full MP4 not downloaded: {output_path}")
