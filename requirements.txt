@@ -1,0 +1,12 @@
+aiohttp
+boto3
+python-dotenv
+motor
+transformers
+openai-whisper
+sentencepiece
+protobuf
+torch
+ffmpeg-python
+yt-dlp
+tqdm
