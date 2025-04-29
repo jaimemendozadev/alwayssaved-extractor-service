@@ -34,6 +34,15 @@ s3_client = boto3.client("s3", region_name=AWS_REGION)
 
 whisper_model = whisper.load_model("turbo", device=DEVICE)
 
+"""
+Dev Notes 4/25/25:
+
+- Decided to organize media uploads and call each upload a "Note".
+- If the Note is an .mp3 or .mp4, a Note is created for that file and it'll get uploaded on the Frontend to s3 at /{userID}/{noteID}/{fileName}.{fileExtension}
+- When SQS messages arrives in Extractor service, will transcribe and upload the transcript to s3 at /{userID}/{noteID}/{fileName}.txt
+
+"""
+
 
 async def main():
     mp3_file_name = None
