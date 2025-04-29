@@ -1,3 +1,5 @@
+import json
+import uuid
 from typing import Any, Dict
 
 from bson.objectid import ObjectId
@@ -8,8 +10,21 @@ s3_video_url = "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298d
 
 def _generate_fake_sqs_msg(python_mode: str) -> Dict[str, Any]:
 
-    return {
-        "userID": ObjectId(),
-        "transcriptID": ObjectId(),
-        "videoURL": youtube_url if python_mode == "development" else s3_video_url,
-    }
+    fake_payload: Dict[str, Any] = {"Messages": []}
+
+    fake_payload["Messages"].append(
+        {
+            "MessageId": str(uuid.uuid4()),
+            "Body": json.dumps(
+                {
+                    "note_id": str(ObjectId()),
+                    "user_id": str(ObjectId()),
+                    "s3_key": (
+                        youtube_url if python_mode == "development" else s3_video_url
+                    ),
+                }
+            ),
+        }
+    )
+
+    return fake_payload
