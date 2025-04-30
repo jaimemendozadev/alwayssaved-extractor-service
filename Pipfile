@@ -28,6 +28,9 @@ black = "*"
 flake8 = "*"
 mypy = "*"
 ruff = "*"
+mypy-boto3-s3 = "*"
+mypy-boto3-sqs = "*"
+mypy-boto3-ssm = "*"
 
 [requires]
 python_version = "3.11"
