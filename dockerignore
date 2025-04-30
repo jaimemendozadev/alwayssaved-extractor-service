@@ -27,3 +27,6 @@ Pipfile.lock
 
 # Ignore .mp4 files
 *.mp4
+
+# Ignore local mock_data
+mock_data/
