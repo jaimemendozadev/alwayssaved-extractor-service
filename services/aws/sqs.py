@@ -1,10 +1,11 @@
 import json
 import os
-from typing import TypedDict
+from typing import Any, Dict, TypedDict
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from bson import ObjectId
+from mypy_boto3_sqs import SQSClient
 
 from services.aws.ssm import get_secret
 
@@ -15,7 +16,31 @@ class EmbeddingPayload(TypedDict):
 
 
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-sqs_client = boto3.client("sqs", region_name=AWS_REGION)
+sqs_client: SQSClient = boto3.client("sqs", region_name=AWS_REGION)
+
+
+def get_extractor_sqs_request() -> Dict[str, Any]:
+
+    extractor_push_queue_url = get_secret("/notecasts/EXTRACTOR_PUSH_QUEUE_URL")
+
+    try:
+        return sqs_client.receive_message(
+            QueueUrl=extractor_push_queue_url,
+            MaxNumberOfMessages=1,
+            WaitTimeSeconds=20,  # <-- long polling
+            VisibilityTimeout=1800,  # <-- match your worst-case processing time
+        )
+
+    except ClientError as e:
+        print(
+            f"❌ SQS ClientError: {e.response.get('Error', {}).get('Message', str(e))}"
+        )
+    except BotoCoreError as e:
+        print(f"❌ BotoCoreError: {str(e)}")
+    except Exception as e:
+        print(f"❌ Unexpected error in get_extractor_sqs_request: {str(e)}")
+
+    return {}
 
 
 def send_embedding_sqs_message(sqs_payload: EmbeddingPayload):
