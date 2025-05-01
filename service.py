@@ -12,14 +12,11 @@ import torch
 import whisper
 from dotenv import load_dotenv
 
-from dev_utils.main import (
-    _generate_fake_sqs_msg,
-)
 from services.audio_extractor.main import delete_local_file, download_video_or_audio
 from services.audio_summary.main import summarize_transcript
 from services.audio_transcription.main import transcribe_audio_file
 from services.aws.s3 import upload_to_s3
-from services.aws.sqs import send_embedding_sqs_message
+from services.aws.sqs import get_extractor_sqs_request, send_embedding_sqs_message
 from services.utils.mongodb.main import create_mongodb_instance
 
 load_dotenv()
@@ -35,15 +32,6 @@ s3_client = boto3.client("s3", region_name=AWS_REGION)
 
 whisper_model = whisper.load_model("turbo", device=DEVICE)
 
-"""
-Dev Notes 4/25/25:
-
-- Decided to organize media uploads and call each upload a "Note".
-- If the Note is an .mp3 or .mp4, a Note is created for that file and it'll get uploaded on the Frontend to s3 at /{userID}/{noteID}/{fileName}.{fileExtension}
-- When SQS messages arrives in Extractor service, will transcribe and upload the transcript to s3 at /{userID}/{noteID}/{fileName}.txt
-
-"""
-
 
 async def main():
     mp3_file_name = None
@@ -56,11 +44,9 @@ async def main():
 
         while True:
             # For MVP, will only dequee one SQS message at a time.
-            _fake_sqs_msg = _generate_fake_sqs_msg(PYTHON_MODE)
+            sqs_msg = get_extractor_sqs_request()
 
-            message_list = _fake_sqs_msg.get("Messages", [])
-
-            print(f"message_list: {message_list}")
+            message_list = sqs_msg.get("Messages", [])
 
             if len(message_list) == 0:
                 continue
@@ -69,19 +55,14 @@ async def main():
 
             sqs_message = json.loads(sqs_payload.get("Body", {}))
 
-            print(f"sqs_message: {sqs_message} \n")
+            s3_key = sqs_message.get("s3_key", None)
+            note_id = sqs_message.get("note_id", None)
+            user_id = sqs_message.get("user_id", None)
 
-            s3_key = sqs_message.get("s3_key")
-            note_id = sqs_message.get("note_id")
-            user_id = sqs_message.get("user_id")
-
-            print(f"s3_k3y: {s3_key}, note_id: {note_id}, user_id: {user_id} \n")
-
-            # DELETE after finishing development
-            if PYTHON_MODE == "development":
-                break
-
-            transcript_id = _fake_sqs_msg.get("transcriptID")
+            if s3_client is None or note_id is None or user_id is None:
+                raise ValueError(
+                    f"Missing s3_key: {s3_key}, note_id: {note_id}, or user_id: {user_id} for incoming SQS Message."
+                )
 
             # 1) Download the audio file.
             audio_download_start_time = time.time()
@@ -113,7 +94,7 @@ async def main():
             if transcript_file_name is None:
                 raise ValueError("Audio was not transcribed. Cannot proceed further")
 
-            base_s3_key = f"{user_id}/{transcript_id}"
+            base_s3_key = f"{user_id}/{note_id}"
 
             # 3) Upload the mp3 audio and transcript to s3.
             uploaded_files = upload_to_s3(s3_client, base_s3_key, video_title)
@@ -136,7 +117,6 @@ async def main():
             print(f"Elapsed time for summarizing: {summarize_elapsed_time} seconds")
 
             transcript_payload = {
-                "_id": transcript_id,
                 "transcriptURL": s3_transcript_url,
                 "audioURL": s3_mp3_url,
                 "transcriptSummary": transcript_summary,
@@ -175,3 +155,18 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+"""
+Dev Notes 5/1/25:
+
+- Decided to organize media uploads and call each upload a "Note".
+- If the Note is an .mp3 or .mp4, a Note is created for that file and it'll get uploaded on the Frontend to s3 at /{userID}/{noteID}/{fileName}.{fileExtension}
+- When SQS messages arrives in Extractor service, will transcribe and upload the transcript to s3 at /{userID}/{noteID}/{fileName}.txt
+- Incoming SQS Message has the following shape:
+  {
+     note_id: ObjectID;
+     user_id: ObjectID;
+     s3_key: string;
+  }
+
+"""
