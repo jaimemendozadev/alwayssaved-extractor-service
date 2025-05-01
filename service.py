@@ -126,27 +126,29 @@ async def main():
                 mongo_client=mongo_db,
             )
 
-            # 6) Delete local files & send SQS Message to embedding queue.
+            # 6) Delete local files, reset local variable, and send SQS Message to embedding queue.
             delete_local_file(f"{video_title}.mp3")
+            mp3_file_name = None
 
             delete_local_file(f"{video_title}.txt")
+            transcript_file_name = None
 
             embedding_payload = {
-                "_id": transcript_id,
+                "note_id": note_id,
                 "transcriptURL": s3_transcript_url,
             }
 
             send_embedding_sqs_message(embedding_payload)
-
-            # DELETE after finishing development
-            if PYTHON_MODE == "development":
-                break
 
     except ValueError as e:
         if mp3_file_name:
             delete_local_file(mp3_file_name)
         if transcript_file_name:
             delete_local_file(transcript_file_name)
+
+        mp3_file_name = None
+        transcript_file_name = None
+
         print(f"❌ Value Error: {e}")
 
 

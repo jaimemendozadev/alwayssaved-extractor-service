@@ -11,7 +11,7 @@ from services.aws.ssm import get_secret
 
 
 class EmbeddingPayload(TypedDict):
-    _id: ObjectId
+    'note_id': ObjectId
     transcriptURL: str
 
 
