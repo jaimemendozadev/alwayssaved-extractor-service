@@ -12,7 +12,7 @@ import torch
 import whisper
 from dotenv import load_dotenv
 
-from mock_data.main import (
+from dev_utils.main import (
     _generate_fake_sqs_msg,
 )
 from services.audio_extractor.main import delete_local_file, download_video_or_audio
