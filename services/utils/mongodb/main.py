@@ -2,7 +2,13 @@
 MongoDB util functions file.
 """
 
+import logging
+import os
+from typing import List, TypedDict
+
+from bson.objectid import ObjectId
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from pymongo.errors import NetworkTimeout, OperationFailure, ServerSelectionTimeoutError
 
 from services.aws.ssm import get_secret
 
@@ -35,3 +41,44 @@ def create_mongodb_instance() -> AsyncIOMotorDatabase:
     # 04-20-25 TODO: Need to validate if DB data persistence works by
     # returning the client or do we have to re-specify the DB name?
     return client[mongo_db_name]
+
+
+class NotePayload(TypedDict):
+    note_id: str
+    user_id: str
+
+
+async def create_note_files(
+    video_title: str,
+    note_payload: NotePayload,
+    s3_urls: List[str],
+    mongo_client: AsyncIOMotorDatabase,
+) -> List[ObjectId]:
+
+    file_ids: List[ObjectId] = []
+
+    try:
+
+        for s3_url in s3_urls:
+            note_ID = ObjectId(note_payload["note_id"])
+            user_ID = ObjectId(note_payload["user_id"])
+            _, file_extension = os.path.splitext(s3_url)
+            file_extension = file_extension.lower()
+            new_file_payload = {
+                "user_id": user_ID,
+                "note_id": note_ID,
+                "s3_k3y": s3_url,
+                "file_name": video_title,
+                "file_type": file_extension,
+            }
+            new_file = await mongo_client["files"].insert_one(new_file_payload)
+            file_ids.append(new_file.inserted_id)
+
+    except (ServerSelectionTimeoutError, NetworkTimeout) as conn_err:
+        logging.error(f"MongoDB connection issue: {conn_err}")
+    except OperationFailure as op_err:
+        logging.error(f"MongoDB operation failed: {op_err}")
+    except Exception as e:
+        logging.exception(f"Unexpected error while inserting file document: {e}")
+
+    return file_ids

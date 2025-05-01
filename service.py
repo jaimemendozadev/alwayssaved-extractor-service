@@ -17,7 +17,7 @@ from services.audio_summary.main import summarize_transcript
 from services.audio_transcription.main import transcribe_audio_file
 from services.aws.s3 import upload_to_s3
 from services.aws.sqs import get_extractor_sqs_request, send_embedding_sqs_message
-from services.utils.mongodb.main import create_mongodb_instance
+from services.utils.mongodb.main import create_mongodb_instance, create_note_files
 
 load_dotenv()
 
@@ -116,17 +116,14 @@ async def main():
             summarize_elapsed_time = summarize_end_time - summarize_start_time
             print(f"Elapsed time for summarizing: {summarize_elapsed_time} seconds")
 
-            transcript_payload = {
-                "transcriptURL": s3_transcript_url,
-                "audioURL": s3_mp3_url,
-                "transcriptSummary": transcript_summary,
-            }
-
-            options = {"upsert": True, "return_document": True}
+            s3_urls = [s3_transcript_url, s3_mp3_url]
 
             # 5) Update MongoDB and delete local files.
-            await mongo_db["transcripts"].find_one_and_update(
-                {"_id": transcript_id}, {"$set": transcript_payload}, **options
+            await create_note_files(
+                video_title=video_title,
+                note_payload={"user_id": user_id, "note_id": note_id},
+                s3_urls=s3_urls,
+                mongo_client=mongo_db,
             )
 
             # 6) Delete local files & send SQS Message to embedding queue.
