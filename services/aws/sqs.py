@@ -9,12 +9,6 @@ from mypy_boto3_sqs import SQSClient
 
 from services.aws.ssm import get_secret
 
-
-class EmbeddingPayload(TypedDict):
-    'note_id': ObjectId
-    transcriptURL: str
-
-
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 sqs_client: SQSClient = boto3.client("sqs", region_name=AWS_REGION)
 
@@ -43,6 +37,11 @@ def get_extractor_sqs_request() -> Dict[str, Any]:
     return {}
 
 
+class EmbeddingPayload(TypedDict):
+    note_id: ObjectId
+    transcript_url: str
+
+
 def send_embedding_sqs_message(sqs_payload: EmbeddingPayload):
     """Sends a message to the SQS embedding_push_queue indicating the transcript is ready for the embedding process."""
 
@@ -54,12 +53,7 @@ def send_embedding_sqs_message(sqs_payload: EmbeddingPayload):
 
     try:
         # Serialize _id if it's an ObjectId
-        payload_json = json.dumps(
-            {
-                **sqs_payload,
-                "_id": str(sqs_payload["_id"]),
-            }
-        )
+        payload_json = json.dumps(sqs_payload)
 
         response = sqs_client.send_message(
             QueueUrl=embedding_push_queue_url,

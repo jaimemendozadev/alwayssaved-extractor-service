@@ -13,7 +13,6 @@ import whisper
 from dotenv import load_dotenv
 
 from services.audio_extractor.main import delete_local_file, download_video_or_audio
-from services.audio_summary.main import summarize_transcript
 from services.audio_transcription.main import transcribe_audio_file
 from services.aws.s3 import upload_to_s3
 from services.aws.sqs import get_extractor_sqs_request, send_embedding_sqs_message
@@ -106,16 +105,6 @@ async def main():
 
             s3_transcript_url, s3_mp3_url = uploaded_files
 
-            # 4) Generate a summary of the transcript.
-            summarize_start_time = time.time()
-
-            transcript_summary = summarize_transcript(video_title)
-
-            summarize_end_time = time.time()
-
-            summarize_elapsed_time = summarize_end_time - summarize_start_time
-            print(f"Elapsed time for summarizing: {summarize_elapsed_time} seconds")
-
             s3_urls = [s3_transcript_url, s3_mp3_url]
 
             # 5) Update MongoDB and delete local files.
@@ -126,7 +115,7 @@ async def main():
                 mongo_client=mongo_db,
             )
 
-            # 6) Delete local files, reset local variable, and send SQS Message to embedding queue.
+            # 6) Delete local files, reset local variables, and send SQS Message to embedding queue.
             delete_local_file(f"{video_title}.mp3")
             mp3_file_name = None
 
@@ -135,9 +124,10 @@ async def main():
 
             embedding_payload = {
                 "note_id": note_id,
-                "transcriptURL": s3_transcript_url,
+                "transcript_url": s3_transcript_url,
             }
 
+            # TODO: May have to reevaluate payload shape that gets sent to embedding service
             send_embedding_sqs_message(embedding_payload)
 
     except ValueError as e:
@@ -167,5 +157,13 @@ Dev Notes 5/1/25:
      user_id: ObjectID;
      s3_key: string;
   }
+
+
+- Outgoing SQS Message has the following shape (may get redone):
+{
+    note_id: string;
+    transcript_url: string;
+}
+
 
 """
