@@ -125,6 +125,7 @@ async def main():
             embedding_payload = {
                 "note_id": note_id,
                 "transcript_url": s3_transcript_url,
+                "user_id": user_id,
             }
 
             # TODO: May have to reevaluate payload shape that gets sent to embedding service
@@ -164,5 +165,6 @@ Dev Notes 5/1/25:
 {
     note_id: string;
     transcript_url: string;
+    user_id: string;
 }
 """
