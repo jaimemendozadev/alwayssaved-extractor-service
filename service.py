@@ -103,7 +103,7 @@ async def main():
                     "Transcript and mp3 files were not uploaded to s3. Cannot proceed further"
                 )
 
-            s3_transcript_url, s3_mp3_url = uploaded_files
+            s3_transcript_url, s3_mp3_url = uploaded_files  # pylint: disable=W0632
 
             s3_urls = [s3_transcript_url, s3_mp3_url]
 
@@ -145,6 +145,7 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 
+# pylint: disable=W0105
 """
 Dev Notes 5/1/25:
 
@@ -164,6 +165,4 @@ Dev Notes 5/1/25:
     note_id: string;
     transcript_url: string;
 }
-
-
 """

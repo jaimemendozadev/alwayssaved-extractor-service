@@ -13,7 +13,6 @@ from services.aws.ssm import get_secret
 
 youtube_url = "https://www.youtube.com/watch?v=1_gJp2uAjO0"
 s3_video_url = "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/Palmer+Luckey+Wants+to+Be+Silicon+Valley's+War+King+%EF%BD%9C+The+Circuit.mp4"
-test_s3_url = "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/How+China%E2%80%99s+New+AI+Model+DeepSeek+Is+Threatening+U.S.+Dominance.mp4"
 
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 sqs_client: SQSClient = boto3.client("sqs", region_name=AWS_REGION)
@@ -44,11 +43,17 @@ def _generate_fake_sqs_msg(python_mode: str) -> Dict[str, Any]:
     return fake_payload
 
 
-def send_test_extractor_sqs_message() -> None:
+def _send_test_extractor_sqs_message(test_s3_url: str) -> None:
     extractor_push_queue_url = get_secret("/notecasts/EXTRACTOR_PUSH_QUEUE_URL")
 
     if not extractor_push_queue_url:
-        print("⚠️ ERROR: SQS Queue URL not set for send_test_extractor_sqs_message!")
+        print(
+            "⚠️ ERROR in _send_test_extractor_sqs_message: SQS Queue URL not set for send_test_extractor_sqs_message!"
+        )
+        return
+
+    if not test_s3_url or len(test_s3_url) < 1:
+        print("⚠️ ERROR in _send_test_extractor_sqs_message: Missing s3_url")
         return
 
     try:
