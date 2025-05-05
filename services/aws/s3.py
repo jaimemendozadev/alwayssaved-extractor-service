@@ -10,8 +10,8 @@ from services.aws.ssm import get_secret
 def upload_to_s3(s3_client: boto3.client, base_s3_key, video_title) -> Tuple[str, ...]:
 
     try:
-        bucket_name = get_secret("/notecasts/AWS_BUCKET")
-        bucket_base_url = get_secret("/notecasts/AWS_BUCKET_BASE_URL")
+        bucket_name = get_secret("/alwayssaved/AWS_BUCKET")
+        bucket_base_url = get_secret("/alwayssaved/AWS_BUCKET_BASE_URL")
 
         uploaded_files: List[str] = []
 

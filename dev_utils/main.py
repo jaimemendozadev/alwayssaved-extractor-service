@@ -55,7 +55,7 @@ def _generate_fake_sqs_msg(python_mode: str) -> Dict[str, Any]:
 
 
 def _send_test_extractor_sqs_message(test_s3_url: str) -> None:
-    extractor_push_queue_url = get_secret("/notecasts/EXTRACTOR_PUSH_QUEUE_URL")
+    extractor_push_queue_url = get_secret("/alwayssaved/EXTRACTOR_PUSH_QUEUE_URL")
 
     if not extractor_push_queue_url:
         print(

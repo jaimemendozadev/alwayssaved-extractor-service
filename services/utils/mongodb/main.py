@@ -14,15 +14,15 @@ from services.aws.ssm import get_secret
 
 
 def create_mongodb_instance() -> AsyncIOMotorDatabase:
-    mongo_db_user = get_secret("/notecasts/MONGO_DB_USER")
+    mongo_db_user = get_secret("/alwayssaved/MONGO_DB_USER")
 
-    mongo_db_password = get_secret("/notecasts/MONGO_DB_PASSWORD")
+    mongo_db_password = get_secret("/alwayssaved/MONGO_DB_PASSWORD")
 
-    mongo_db_base_uri = get_secret("/notecasts/MONGO_DB_BASE_URI")
+    mongo_db_base_uri = get_secret("/alwayssaved/MONGO_DB_BASE_URI")
 
-    mongo_db_name = get_secret("/notecasts/MONGO_DB_NAME")
+    mongo_db_name = get_secret("/alwayssaved/MONGO_DB_NAME")
 
-    mongo_db_cluster_name = get_secret("/notecasts/MONGO_DB_CLUSTER_NAME")
+    mongo_db_cluster_name = get_secret("/alwayssaved/MONGO_DB_CLUSTER_NAME")
 
     if (
         mongo_db_user is None

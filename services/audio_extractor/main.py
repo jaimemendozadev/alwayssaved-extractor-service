@@ -112,7 +112,7 @@ def download_video_or_audio(
                 "overwrites": True,
             }
 
-            bucket_name = get_secret("/notecasts/AWS_BUCKET")
+            bucket_name = get_secret("/alwayssaved/AWS_BUCKET")
             if not bucket_name:
                 raise ValueError("AWS_BUCKET not set in SSM.")
 

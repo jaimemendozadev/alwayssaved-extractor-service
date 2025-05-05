@@ -15,7 +15,7 @@ sqs_client: SQSClient = boto3.client("sqs", region_name=AWS_REGION)
 
 def get_extractor_sqs_request() -> Dict[str, Any]:
 
-    extractor_push_queue_url = get_secret("/notecasts/EXTRACTOR_PUSH_QUEUE_URL")
+    extractor_push_queue_url = get_secret("/alwayssaved/EXTRACTOR_PUSH_QUEUE_URL")
 
     try:
         return sqs_client.receive_message(
@@ -45,7 +45,7 @@ class EmbeddingPayload(TypedDict):
 def send_embedding_sqs_message(sqs_payload: EmbeddingPayload):
     """Sends a message to the SQS embedding_push_queue indicating the transcript is ready for the embedding process."""
 
-    embedding_push_queue_url = get_secret("/notecasts/EMBEDDING_PUSH_QUEUE_URL")
+    embedding_push_queue_url = get_secret("/alwayssaved/EMBEDDING_PUSH_QUEUE_URL")
 
     if not embedding_push_queue_url:
         print("⚠️ ERROR: SQS Queue URL not set!")
