@@ -36,8 +36,6 @@ async def main():
     mp3_file_name = None
     transcript_file_name = None
 
-    print(f"PYTHON_MODE: ${PYTHON_MODE}")
-
     try:
         mongo_db = create_mongodb_instance()
 

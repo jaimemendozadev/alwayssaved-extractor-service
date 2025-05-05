@@ -30,3 +30,7 @@ Pipfile.lock
 
 # Ignore local dev_utils
 dev_utils/
+
+# Add Dev Folders
+.mypy_cache/
+.ruff_cache/
