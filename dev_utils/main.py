@@ -11,8 +11,19 @@ from mypy_boto3_sqs import SQSClient
 
 from services.aws.ssm import get_secret
 
-youtube_url = "https://www.youtube.com/watch?v=1_gJp2uAjO0"
-s3_video_url = "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/Palmer+Luckey+Wants+to+Be+Silicon+Valley's+War+King+%EF%BD%9C+The+Circuit.mp4"
+youtube_url = "https://www.youtube.com/watch?v=k82RwXqZHY8"
+s3_video_url = ""
+s3_video_list = [
+    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/Geoffrey+Hinton+%EF%BD%9C+On+working+with+Ilya%2C+choosing+problems%2C+and+the+power+of+intuition.mp4",
+    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/How+China%E2%80%99s+New+AI+Model+DeepSeek+Is+Threatening+U.S.+Dominance.mp4",
+    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/Ilya+Sutskever%EF%BC%9A+Deep+Learning+%EF%BD%9C+Lex+Fridman+Podcast+%2394.mp4",
+    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/Jensen+Huang%2C+Founder+and+CEO+of+NVIDIA.mp4",
+    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/NVIDIA+CEO+Jensen+Huang's+Vision+for+the+Future.mp4",
+    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/Palmer+Luckey+Wants+to+Be+Silicon+Valley's+War+King+%EF%BD%9C+The+Circuit.mp4",
+    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/The+AI+Arsenal+That+Could+Stop+World+War+III+%EF%BD%9C+Palmer+Luckey+%EF%BD%9C+TED.mp4",
+    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/The+Race+to+Harness+Quantum+Computing's+Mind-Bending+Power+%EF%BD%9C+The+Future+With+Hannah+Fry.mp4",
+    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/Yann+LeCun%EF%BC%9A+Deep+Learning%2C+ConvNets%2C+and+Self-Supervised+Learning+%EF%BD%9C+Lex+Fridman+Podcast+%2336.mp4",
+]
 
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 sqs_client: SQSClient = boto3.client("sqs", region_name=AWS_REGION)
