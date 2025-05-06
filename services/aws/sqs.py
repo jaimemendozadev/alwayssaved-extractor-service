@@ -1,16 +1,18 @@
 import json
 import os
-from typing import Any, Dict, TypedDict
+from typing import TYPE_CHECKING, Any, Dict, TypedDict
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from bson import ObjectId
-from mypy_boto3_sqs import SQSClient
 
 from services.aws.ssm import get_secret
 
+if TYPE_CHECKING:
+    from mypy_boto3_sqs import SQSClient
+
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-sqs_client: SQSClient = boto3.client("sqs", region_name=AWS_REGION)
+sqs_client: "SQSClient" = boto3.client("sqs", region_name=AWS_REGION)
 
 
 def get_extractor_sqs_request() -> Dict[str, Any]:

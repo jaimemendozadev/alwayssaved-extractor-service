@@ -1,13 +1,15 @@
 import os
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
-from mypy_boto3_ssm import SSMClient
+
+if TYPE_CHECKING:
+    from mypy_boto3_ssm import SSMClient
 
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 
-ssm_client: SSMClient = boto3.client("ssm", region_name=AWS_REGION)
+ssm_client: "SSMClient" = boto3.client("ssm", region_name=AWS_REGION)
 
 
 def get_secret(param_name: str) -> Optional[str]:

@@ -2,15 +2,17 @@ import json
 import os
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from bson.objectid import ObjectId
 from dotenv import load_dotenv
-from mypy_boto3_sqs import SQSClient
 
 from services.aws.ssm import get_secret
+
+if TYPE_CHECKING:
+    from mypy_boto3_sqs import SQSClient
 
 youtube_url = "https://www.youtube.com/watch?v=k82RwXqZHY8"
 s3_video_url = "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/How+China%E2%80%99s+New+AI+Model+DeepSeek+Is+Threatening+U.S.+Dominance.mp4"
@@ -31,7 +33,7 @@ s3_video_list = [
 ]
 
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-sqs_client: SQSClient = boto3.client("sqs", region_name=AWS_REGION)
+sqs_client: "SQSClient" = boto3.client("sqs", region_name=AWS_REGION)
 
 
 load_dotenv()
