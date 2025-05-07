@@ -59,6 +59,7 @@ def _generate_fake_sqs_msg(python_mode: str) -> Dict[str, Any]:
     fake_payload["Messages"].append(
         {
             "MessageId": str(uuid.uuid4()),
+            "ReceiptHandle": str(uuid.uuid4()),
             "Body": json.dumps(
                 {
                     "note_id": str(ObjectId()),

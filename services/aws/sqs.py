@@ -24,7 +24,7 @@ def get_extractor_sqs_request() -> Dict[str, Any]:
             QueueUrl=extractor_push_queue_url,
             MaxNumberOfMessages=1,
             WaitTimeSeconds=20,  # <-- long polling
-            VisibilityTimeout=1800,  # <-- match your worst-case processing time
+            VisibilityTimeout=3000,  # <-- 50 mins worst-case processing time
         )
 
     except ClientError as e:
@@ -44,7 +44,7 @@ class EmbeddingPayload(TypedDict):
     transcript_url: str
 
 
-def send_embedding_sqs_message(sqs_payload: EmbeddingPayload):
+def send_embedding_sqs_message(sqs_payload: EmbeddingPayload) -> None:
     """Sends a message to the SQS embedding_push_queue indicating the transcript is ready for the embedding process."""
 
     embedding_push_queue_url = get_secret("/alwayssaved/EMBEDDING_PUSH_QUEUE_URL")
@@ -63,6 +63,36 @@ def send_embedding_sqs_message(sqs_payload: EmbeddingPayload):
         )
 
         print(f"✅ SQS Message Sent! Message ID: {response['MessageId']}")
+
+    except ClientError as e:
+        print(
+            f"❌ AWS Client Error sending SQS message: {e.response['Error']['Message']}"
+        )
+
+    except BotoCoreError as e:
+        print(f"❌ Boto3 Internal Error: {str(e)}")
+
+    except Exception as e:
+        print(f"❌ Unexpected Error: {str(e)}")
+
+
+def delete_extractor_sqs_message(processed_sqs_msg: Dict[str, Any]):
+
+    extractor_push_queue_url = get_secret("/alwayssaved/EXTRACTOR_PUSH_QUEUE_URL")
+
+    if not extractor_push_queue_url:
+        print("⚠️ ERROR: SQS Queue URL not set for delete_extractor_sqs_message!")
+        return
+
+    try:
+        receipt_handle = processed_sqs_msg.get("ReceiptHandle", None)
+
+        sqs_client.delete_message(
+            QueueUrl=extractor_push_queue_url, ReceiptHandle=receipt_handle
+        )
+        print(
+            f"✅ SQS Message Deleted from Extractor Push Queue: {processed_sqs_msg['MessageId']}"
+        )
 
     except ClientError as e:
         print(

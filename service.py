@@ -15,7 +15,11 @@ from dotenv import load_dotenv
 from services.audio_extractor.main import delete_local_file, download_video_or_audio
 from services.audio_transcription.main import transcribe_audio_file
 from services.aws.s3 import upload_to_s3
-from services.aws.sqs import get_extractor_sqs_request, send_embedding_sqs_message
+from services.aws.sqs import (
+    delete_extractor_sqs_message,
+    get_extractor_sqs_request,
+    send_embedding_sqs_message,
+)
 from services.utils.mongodb.main import create_mongodb_instance, create_note_files
 
 load_dotenv()
@@ -113,13 +117,14 @@ async def main():
                 mongo_client=mongo_db,
             )
 
-            # 6) Delete local files, reset local variables, and send SQS Message to embedding queue.
+            # 6) Delete local files, reset local variables.
             delete_local_file(f"{video_title}.mp3")
             mp3_file_name = None
 
             delete_local_file(f"{video_title}.txt")
             transcript_file_name = None
 
+            # 6) Send SQS Message to embedding queue & delete old processed SQS message.
             embedding_payload = {
                 "note_id": note_id,
                 "transcript_url": s3_transcript_url,
@@ -128,6 +133,8 @@ async def main():
 
             # TODO: May have to reevaluate payload shape that gets sent to embedding service
             send_embedding_sqs_message(embedding_payload)
+
+            delete_extractor_sqs_message(sqs_message)
 
     except ValueError as e:
         if mp3_file_name:
