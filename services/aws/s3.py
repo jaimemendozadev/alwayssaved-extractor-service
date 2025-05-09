@@ -27,6 +27,8 @@ def upload_to_s3(s3_client: boto3.client, base_s3_key, video_title) -> Tuple[str
             target_s3_key = f"{base_s3_key}/{file}"
             full_s3_url = f"{bucket_base_url}/{bucket_name}/{target_s3_key}"
 
+            print(f"full_s3_url: {full_s3_url} \n")
+
             uploaded_files.append(full_s3_url)
 
             s3_client.upload_file(file_abs_path, bucket_name, target_s3_key)
