@@ -47,6 +47,8 @@ async def main():
             # For MVP, will only dequee one SQS message at a time.
             incoming_sqs_msg = get_extractor_sqs_request()
 
+            print(f"incoming_sqs_msg in main(): {incoming_sqs_msg}")
+
             message_list = incoming_sqs_msg.get("Messages", [])
 
             if len(message_list) == 0:

@@ -61,7 +61,9 @@ def send_embedding_sqs_message(sqs_payload: EmbeddingPayload) -> None:
             MessageBody=payload_json,
         )
 
-        print(f"✅ SQS Message Sent! Message ID: {response['MessageId']}")
+        print(
+            f"✅ SQS Message Sent in send_embedding_sqs_message! Message ID: {response['MessageId']}"
+        )
 
     except ClientError as e:
         print(
@@ -85,6 +87,10 @@ def delete_extractor_sqs_message(incoming_sqs_msg: Dict[str, Any]):
 
     try:
         receipt_handle = incoming_sqs_msg.get("ReceiptHandle", None)
+
+        # TODO: Delete these print statements
+        print(f"incoming_sqs_msg in delete_extractor_sqs_message: {incoming_sqs_msg}")
+        print(f"receipt_handle in delete_extractor_sqs_message: {receipt_handle}")
 
         sqs_client.delete_message(
             QueueUrl=extractor_push_queue_url, ReceiptHandle=receipt_handle
