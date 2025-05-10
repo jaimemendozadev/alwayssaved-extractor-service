@@ -11,6 +11,7 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pymongo.errors import NetworkTimeout, OperationFailure, ServerSelectionTimeoutError
 
 from services.aws.ssm import get_secret
+from services.utils.types.main import FilePayload
 
 
 def create_mongodb_instance() -> AsyncIOMotorDatabase:
@@ -51,7 +52,7 @@ class NotePayload(TypedDict):
 async def create_note_files(
     video_title: str,
     note_payload: NotePayload,
-    s3_urls: List[str],
+    file_payloads: List[FilePayload],
     mongo_client: AsyncIOMotorDatabase,
 ) -> List[ObjectId]:
 
@@ -59,15 +60,18 @@ async def create_note_files(
 
     try:
 
-        for s3_url in s3_urls:
+        for payload in file_payloads:
             note_ID = ObjectId(note_payload["note_id"])
             user_ID = ObjectId(note_payload["user_id"])
+            s3_url = payload.get("s3_url", "")
+            s3_key = payload.get("s3_key", "")
             _, file_extension = os.path.splitext(s3_url)
             file_extension = file_extension.lower()
             new_file_payload = {
                 "user_id": user_ID,
                 "note_id": note_ID,
-                "s3_k3y": s3_url,
+                "s3_key": s3_key,
+                "s3_url": s3_url,
                 "file_name": video_title,
                 "file_type": file_extension,
             }

@@ -98,22 +98,27 @@ async def main():
             base_s3_key = f"{user_id}/{note_id}"
 
             # 3) Upload the mp3 audio and transcript to s3.
-            uploaded_files = upload_to_s3(s3_client, base_s3_key, video_title)
+            audio_payload = upload_to_s3(s3_client, base_s3_key, f"{video_title}.mp3")
 
-            if len(uploaded_files) != 2:
+            transcript_payload = upload_to_s3(
+                s3_client, base_s3_key, f"{video_title}.txt"
+            )
+
+            if (
+                transcript_payload.get("s3_url", "") == ""
+                or transcript_payload.get("s3_key", "") == ""
+                or audio_payload.get("s3_url", "") == ""
+                or audio_payload.get("s3_key", "") == ""
+            ):
                 raise ValueError(
-                    "Transcript and mp3 files were not uploaded to s3. Cannot proceed further"
+                    "Transcript or mp3 audio file was not uploaded to s3. Cannot proceed further"
                 )
-
-            s3_transcript_url, s3_mp3_url = uploaded_files  # pylint: disable=W0632
-
-            s3_urls = [s3_transcript_url, s3_mp3_url]
 
             # 5) Update MongoDB and delete local files.
             await create_note_files(
                 video_title=video_title,
                 note_payload={"user_id": user_id, "note_id": note_id},
-                s3_urls=s3_urls,
+                file_payloads=[audio_payload, transcript_payload],
                 mongo_client=mongo_db,
             )
 
@@ -127,7 +132,8 @@ async def main():
             # 6) Send SQS Message to embedding queue & delete old processed SQS message.
             embedding_payload = {
                 "note_id": note_id,
-                "transcript_url": s3_transcript_url,
+                "transcript_url": transcript_payload.get("s3_url"),
+                "transcript_key": transcript_payload.get("s3_key"),
                 "user_id": user_id,
             }
 
@@ -170,6 +176,7 @@ Dev Notes 5/1/25:
 {
     note_id: string;
     transcript_url: string;
+    transcript_key: string;
     user_id: string;
 }
 """
