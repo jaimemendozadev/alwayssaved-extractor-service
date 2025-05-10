@@ -29,10 +29,10 @@ def get_extractor_sqs_request() -> Dict[str, Any]:
 
     except ClientError as e:
         print(
-            f"❌ SQS ClientError: {e.response.get('Error', {}).get('Message', str(e))}"
+            f"❌ SQS ClientError in get_extractor_sqs_request: {e.response.get('Error', {}).get('Message', str(e))}"
         )
     except BotoCoreError as e:
-        print(f"❌ BotoCoreError: {str(e)}")
+        print(f"❌ BotoCoreError in get_extractor_sqs_request: {str(e)}")
     except Exception as e:
         print(f"❌ Unexpected error in get_extractor_sqs_request: {str(e)}")
 

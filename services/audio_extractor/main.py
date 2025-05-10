@@ -128,11 +128,11 @@ def download_video_or_audio(
             return video_title
 
     except yt_dlp.DownloadError as e:
-        print(f"❌ yt-dlp Error: {e}")
+        print(f"❌ yt-dlp Error in download_video_or_audio: {e}")
         return None
     except subprocess.CalledProcessError as e:
-        print(f"❌ FFmpeg failed to extract audio: {e}")
+        print(f"❌ FFmpeg failed to extract audio in download_video_or_audio: {e}")
         return None
     except Exception as e:
-        print(f"❌ Unexpected Error: {e}")
+        print(f"❌ Unexpected Error in download_video_or_audio: {e}")
         return None
