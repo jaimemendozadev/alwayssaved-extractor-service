@@ -105,13 +105,13 @@ async def main():
             )
 
             if (
-                transcript_payload.get("s3_url", "") == ""
+                transcript_payload.get("s3_bucket", "") == ""
                 or transcript_payload.get("s3_key", "") == ""
-                or audio_payload.get("s3_url", "") == ""
+                or audio_payload.get("s3_bucket", "") == ""
                 or audio_payload.get("s3_key", "") == ""
             ):
                 raise ValueError(
-                    "Transcript or mp3 audio file was not uploaded to s3. Cannot proceed further"
+                    f"Transcript ({transcript_payload}) or mp3 audio ({audio_payload}) file was not uploaded to s3. Cannot proceed further."
                 )
 
             # 5) Update MongoDB and delete local files.
@@ -132,9 +132,9 @@ async def main():
             # 6) Send SQS Message to embedding queue & delete old processed SQS message.
             embedding_payload = {
                 "note_id": note_id,
-                "transcript_url": transcript_payload.get("s3_url"),
-                "transcript_key": transcript_payload.get("s3_key"),
                 "user_id": user_id,
+                "transcript_bucket": transcript_payload.get("s3_bucket"),
+                "transcript_key": transcript_payload.get("s3_key"),
             }
 
             # TODO: May have to reevaluate payload shape that gets sent to embedding service
@@ -151,7 +151,7 @@ async def main():
         mp3_file_name = None
         transcript_file_name = None
 
-        print(f"❌ Value Error: {e}")
+        print(f"❌ Value Error in main function: {e}")
 
 
 if __name__ == "__main__":
@@ -159,7 +159,7 @@ if __name__ == "__main__":
 
 # pylint: disable=W0105
 """
-Dev Notes 5/1/25:
+Dev Notes 5/10/25:
 
 - Decided to organize media uploads and call each upload a "Note".
 - If the Note is an .mp3 or .mp4, a Note is created for that file and it'll get uploaded on the Frontend to s3 at /{userID}/{noteID}/{fileName}.{fileExtension}
@@ -175,8 +175,8 @@ Dev Notes 5/1/25:
 - Outgoing SQS Message has the following shape (may get redone):
 {
     note_id: string;
-    transcript_url: string;
-    transcript_key: string;
     user_id: string;
+    transcript_bucket: string;
+    transcript_key: string;
 }
 """

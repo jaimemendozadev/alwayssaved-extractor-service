@@ -63,15 +63,17 @@ async def create_note_files(
         for payload in file_payloads:
             note_ID = ObjectId(note_payload["note_id"])
             user_ID = ObjectId(note_payload["user_id"])
-            s3_url = payload.get("s3_url", "")
+            s3_bucket = payload.get("s3_bucket", "")
             s3_key = payload.get("s3_key", "")
-            _, file_extension = os.path.splitext(s3_url)
+            _, file_extension = os.path.splitext(s3_key)
+
             file_extension = file_extension.lower()
+
             new_file_payload = {
                 "user_id": user_ID,
                 "note_id": note_ID,
                 "s3_key": s3_key,
-                "s3_url": s3_url,
+                "s3_bucket": s3_bucket,
                 "file_name": video_title,
                 "file_type": file_extension,
             }
@@ -79,10 +81,12 @@ async def create_note_files(
             file_ids.append(new_file.inserted_id)
 
     except (ServerSelectionTimeoutError, NetworkTimeout) as conn_err:
-        logging.error(f"MongoDB connection issue: {conn_err}")
+        logging.error(f"MongoDB connection issue in create_note_files: {conn_err}")
     except OperationFailure as op_err:
-        logging.error(f"MongoDB operation failed: {op_err}")
+        logging.error(f"MongoDB operation failed in create_note_files: {op_err}")
     except Exception as e:
-        logging.exception(f"Unexpected error while inserting file document: {e}")
+        logging.exception(
+            f"Unexpected error while inserting file document in create_note_files: {e}"
+        )
 
     return file_ids
