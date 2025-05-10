@@ -45,20 +45,20 @@ async def main():
 
         while True:
             # For MVP, will only dequee one SQS message at a time.
-            sqs_msg = get_extractor_sqs_request()
+            incoming_sqs_msg = get_extractor_sqs_request()
 
-            message_list = sqs_msg.get("Messages", [])
+            message_list = incoming_sqs_msg.get("Messages", [])
 
             if len(message_list) == 0:
                 continue
 
             sqs_payload = message_list.pop()
 
-            sqs_message = json.loads(sqs_payload.get("Body", {}))
+            sqs_message_body = json.loads(sqs_payload.get("Body", {}))
 
-            s3_key = sqs_message.get("s3_key", None)
-            note_id = sqs_message.get("note_id", None)
-            user_id = sqs_message.get("user_id", None)
+            s3_key = sqs_message_body.get("s3_key", None)
+            note_id = sqs_message_body.get("note_id", None)
+            user_id = sqs_message_body.get("user_id", None)
 
             if s3_client is None or note_id is None or user_id is None:
                 raise ValueError(
@@ -140,7 +140,7 @@ async def main():
             # TODO: May have to reevaluate payload shape that gets sent to embedding service
             send_embedding_sqs_message(embedding_payload)
 
-            delete_extractor_sqs_message(sqs_message)
+            delete_extractor_sqs_message(incoming_sqs_msg)
 
     except ValueError as e:
         if mp3_file_name:

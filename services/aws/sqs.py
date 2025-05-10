@@ -54,7 +54,6 @@ def send_embedding_sqs_message(sqs_payload: EmbeddingPayload) -> None:
         return
 
     try:
-        # Serialize _id if it's an ObjectId
         payload_json = json.dumps(sqs_payload)
 
         response = sqs_client.send_message(
@@ -66,17 +65,17 @@ def send_embedding_sqs_message(sqs_payload: EmbeddingPayload) -> None:
 
     except ClientError as e:
         print(
-            f"❌ AWS Client Error sending SQS message: {e.response['Error']['Message']}"
+            f"❌ AWS Client Error sending SQS message in send_embedding_sqs_message: {e.response['Error']['Message']}"
         )
 
     except BotoCoreError as e:
-        print(f"❌ Boto3 Internal Error: {str(e)}")
+        print(f"❌ Boto3 Internal Error in send_embedding_sqs_message: {str(e)}")
 
     except Exception as e:
-        print(f"❌ Unexpected Error: {str(e)}")
+        print(f"❌ Unexpected Error in send_embedding_sqs_message: {str(e)}")
 
 
-def delete_extractor_sqs_message(processed_sqs_msg: Dict[str, Any]):
+def delete_extractor_sqs_message(incoming_sqs_msg: Dict[str, Any]):
 
     extractor_push_queue_url = get_secret("/alwayssaved/EXTRACTOR_PUSH_QUEUE_URL")
 
@@ -85,13 +84,13 @@ def delete_extractor_sqs_message(processed_sqs_msg: Dict[str, Any]):
         return
 
     try:
-        receipt_handle = processed_sqs_msg.get("ReceiptHandle", None)
+        receipt_handle = incoming_sqs_msg.get("ReceiptHandle", None)
 
         sqs_client.delete_message(
             QueueUrl=extractor_push_queue_url, ReceiptHandle=receipt_handle
         )
         print(
-            f"✅ SQS Message Deleted from Extractor Push Queue: {processed_sqs_msg['MessageId']}"
+            f"✅ SQS Message Deleted from Extractor Push Queue: {incoming_sqs_msg['MessageId']}"
         )
 
     except ClientError as e:
@@ -100,7 +99,7 @@ def delete_extractor_sqs_message(processed_sqs_msg: Dict[str, Any]):
         )
 
     except BotoCoreError as e:
-        print(f"❌ Boto3 Internal Error: {str(e)}")
+        print(f"❌ Boto3 Internal Error in delete_extractor_sqs_message: {str(e)}")
 
     except Exception as e:
-        print(f"❌ Unexpected Error: {str(e)}")
+        print(f"❌ Unexpected Error in delete_extractor_sqs_message: {str(e)}")
