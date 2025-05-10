@@ -54,9 +54,9 @@ async def main():
             if len(message_list) == 0:
                 continue
 
-            sqs_payload = message_list.pop()
+            popped_sqs_payload = message_list.pop()
 
-            sqs_message_body = json.loads(sqs_payload.get("Body", {}))
+            sqs_message_body = json.loads(popped_sqs_payload.get("Body", {}))
 
             s3_key = sqs_message_body.get("s3_key", None)
             note_id = sqs_message_body.get("note_id", None)
@@ -142,7 +142,7 @@ async def main():
             # TODO: May have to reevaluate payload shape that gets sent to embedding service
             send_embedding_sqs_message(embedding_payload)
 
-            delete_extractor_sqs_message(incoming_sqs_msg)
+            delete_extractor_sqs_message(popped_sqs_payload)
 
     except ValueError as e:
         if mp3_file_name:

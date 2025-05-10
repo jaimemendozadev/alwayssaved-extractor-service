@@ -77,16 +77,21 @@ def send_embedding_sqs_message(sqs_payload: EmbeddingPayload) -> None:
         print(f"❌ Unexpected Error in send_embedding_sqs_message: {str(e)}")
 
 
-def delete_extractor_sqs_message(incoming_sqs_msg: Dict[str, Any]):
-
-    extractor_push_queue_url = get_secret("/alwayssaved/EXTRACTOR_PUSH_QUEUE_URL")
-
-    if not extractor_push_queue_url:
-        print("⚠️ ERROR: SQS Queue URL not set for delete_extractor_sqs_message!")
-        return
-
+def delete_extractor_sqs_message(incoming_sqs_msg: Dict[str, Any]) -> None:
     try:
-        receipt_handle = incoming_sqs_msg.get("ReceiptHandle", None)
+        extractor_push_queue_url = get_secret("/alwayssaved/EXTRACTOR_PUSH_QUEUE_URL")
+
+        if not extractor_push_queue_url:
+            raise ValueError(
+                "⚠️ ERROR: SQS Queue URL not set for delete_extractor_sqs_message!"
+            )
+
+        receipt_handle = incoming_sqs_msg.get("ReceiptHandle", "")
+
+        if len(receipt_handle) == 0:
+            raise ValueError(
+                "⚠️ ERROR: Missing ReceiptHandle to delete processed message from Extractor Push Queue!"
+            )
 
         # TODO: Delete these print statements
         print(f"incoming_sqs_msg in delete_extractor_sqs_message: {incoming_sqs_msg}")
@@ -107,5 +112,5 @@ def delete_extractor_sqs_message(incoming_sqs_msg: Dict[str, Any]):
     except BotoCoreError as e:
         print(f"❌ Boto3 Internal Error in delete_extractor_sqs_message: {str(e)}")
 
-    except Exception as e:
+    except ValueError as e:
         print(f"❌ Unexpected Error in delete_extractor_sqs_message: {str(e)}")
