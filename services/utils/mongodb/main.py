@@ -39,8 +39,6 @@ def create_mongodb_instance() -> AsyncIOMotorDatabase:
     # Create a new client and connect to the server
     client: AsyncIOMotorClient = AsyncIOMotorClient(connection_string)
 
-    # 04-20-25 TODO: Need to validate if DB data persistence works by
-    # returning the client or do we have to re-specify the DB name?
     return client[mongo_db_name]
 
 

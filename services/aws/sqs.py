@@ -93,10 +93,6 @@ def delete_extractor_sqs_message(incoming_sqs_msg: Dict[str, Any]) -> None:
                 "⚠️ ERROR: Missing ReceiptHandle to delete processed message from Extractor Push Queue!"
             )
 
-        # TODO: Delete these print statements
-        print(f"incoming_sqs_msg in delete_extractor_sqs_message: {incoming_sqs_msg}")
-        print(f"receipt_handle in delete_extractor_sqs_message: {receipt_handle}")
-
         sqs_client.delete_message(
             QueueUrl=extractor_push_queue_url, ReceiptHandle=receipt_handle
         )
