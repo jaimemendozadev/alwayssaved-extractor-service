@@ -11,10 +11,12 @@ from typing import Coroutine, List
 
 import boto3
 import torch
+import whisper
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from services.audio_extractor.main import delete_local_file, download_video_or_audio
+from services.audio_transcription.main import transcribe_audio_file
 from services.aws.sqs import (
     get_extractor_sqs_request,
 )
@@ -35,6 +37,11 @@ s3_client = boto3.client("s3", region_name=AWS_REGION)
 WHISPER_MODEL_NAME = "turbo"
 
 process_pool = ProcessPoolExecutor(max_workers=2)  # Tune based on GPU capacity
+
+
+def transcribe_in_process(video_title: str) -> str | None:
+    model = whisper.load_model(WHISPER_MODEL_NAME, device=DEVICE)
+    return transcribe_audio_file(video_title, model)
 
 
 async def process_media_upload(
@@ -58,6 +65,16 @@ async def process_media_upload(
         if not video_title:
             raise ValueError("Video download failed.")
 
+        mp3_file_name = f"{video_title}.mp3"
+
+        # CPU-bound transcription
+        transcript_file_name = await asyncio.get_event_loop().run_in_executor(
+            process_pool, transcribe_in_process, video_title
+        )
+
+        if not transcript_file_name:
+            raise ValueError(f"Transcription for {video_title} failed.")
+
     except ValueError as e:
         if mp3_file_name:
             delete_local_file(mp3_file_name)
@@ -67,7 +84,7 @@ async def process_media_upload(
         mp3_file_name = None
         transcript_file_name = None
 
-        print(f"❌ Value Error in main function: {e}")
+        print(f"❌ Value Error in process_media_upload function: {e}")
 
 
 async def main():
