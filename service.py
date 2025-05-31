@@ -26,9 +26,7 @@ load_dotenv()
 
 # IMPORTANT: REMEMBER TO SET PYTHON_MODE in .env to 'production' when creating Docker image
 PYTHON_MODE = os.getenv("PYTHON_MODE", "production")
-
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 s3_client = boto3.client("s3", region_name=AWS_REGION)
@@ -58,17 +56,18 @@ async def main():
 
             sqs_message_body = json.loads(popped_sqs_payload.get("Body", {}))
 
-            s3_key = sqs_message_body.get("s3_key", None)
-            note_id = sqs_message_body.get("note_id", None)
             user_id = sqs_message_body.get("user_id", None)
+            media_uploads = sqs_message_body.get("media_uploads", None)
 
-            if s3_client is None or note_id is None or user_id is None:
+            if s3_client is None or media_uploads is None or user_id is None:
                 raise ValueError(
-                    f"Missing s3_key: {s3_key}, note_id: {note_id}, or user_id: {user_id} for incoming SQS Message."
+                    f"s3_client unavailable or missing either user_id {user_id} or media_uploads. Can't continue with ML/AI Pipeline media extraction phase."
                 )
 
             # 1) Download the audio file.
             audio_download_start_time = time.time()
+
+            # TODO: Use ProcessPoolExecutor for media_uploads? 🤔
 
             video_title = download_video_or_audio(s3_key, PYTHON_MODE)
 
