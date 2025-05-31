@@ -5,22 +5,17 @@ Main extractor service file
 import asyncio
 import json
 import os
-import time
+from concurrent.futures import ProcessPoolExecutor
 
 import boto3
 import torch
-import whisper
 from dotenv import load_dotenv
 
-from services.audio_extractor.main import delete_local_file, download_video_or_audio
-from services.audio_transcription.main import transcribe_audio_file
-from services.aws.s3 import upload_to_s3
+from services.audio_extractor.main import delete_local_file
 from services.aws.sqs import (
-    delete_extractor_sqs_message,
     get_extractor_sqs_request,
-    send_embedding_sqs_message,
 )
-from services.utils.mongodb.main import create_mongodb_instance, create_note_files
+from services.utils.mongodb.main import create_mongodb_instance
 
 load_dotenv()
 
@@ -31,10 +26,15 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 s3_client = boto3.client("s3", region_name=AWS_REGION)
 
-whisper_model = whisper.load_model("turbo", device=DEVICE)
+# Important: This model load must be re-done inside each subprocess due to ProcessPoolExecutor pickling rules.
+# We'll pass model name and reload in subprocess function.
+WHISPER_MODEL_NAME = "turbo"
+
+process_pool = ProcessPoolExecutor(max_workers=2)  # Tune based on GPU capacity
 
 
 async def main():
+    # TODO: Need to refactor the mp3 and transcript_file checks
     mp3_file_name = None
     transcript_file_name = None
 
@@ -44,16 +44,14 @@ async def main():
         while True:
             # For MVP, will only dequee one SQS message at a time.
             incoming_sqs_msg = get_extractor_sqs_request()
+            message_list = incoming_sqs_msg.get("Messages", [])
 
             print(f"incoming_sqs_msg in main(): {incoming_sqs_msg}")
-
-            message_list = incoming_sqs_msg.get("Messages", [])
 
             if len(message_list) == 0:
                 continue
 
             popped_sqs_payload = message_list.pop()
-
             sqs_message_body = json.loads(popped_sqs_payload.get("Body", {}))
 
             user_id = sqs_message_body.get("user_id", None)
@@ -61,9 +59,10 @@ async def main():
 
             if s3_client is None or media_uploads is None or user_id is None:
                 raise ValueError(
-                    f"s3_client unavailable or missing either user_id {user_id} or media_uploads. Can't continue with ML/AI Pipeline media extraction phase."
+                    f"Missing critical functionality like s3_client, user_id {user_id}, or media_uploads. Can't continue with media extraction."
                 )
 
+            """
             # 1) Download the audio file.
             audio_download_start_time = time.time()
 
@@ -144,6 +143,8 @@ async def main():
             send_embedding_sqs_message(embedding_payload)
 
             delete_extractor_sqs_message(popped_sqs_payload)
+
+            """
 
     except ValueError as e:
         if mp3_file_name:
