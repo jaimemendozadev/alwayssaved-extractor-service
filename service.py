@@ -5,6 +5,7 @@ Main extractor service file
 import asyncio
 import json
 import os
+import time
 from concurrent.futures import ProcessPoolExecutor
 from typing import Coroutine, List
 
@@ -13,7 +14,7 @@ import torch
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from services.audio_extractor.main import delete_local_file
+from services.audio_extractor.main import delete_local_file, download_video_or_audio
 from services.aws.sqs import (
     get_extractor_sqs_request,
 )
@@ -39,52 +40,66 @@ process_pool = ProcessPoolExecutor(max_workers=2)  # Tune based on GPU capacity
 async def process_media_upload(
     upload: s3MediaUpload, user_id: str, mongo_db: AsyncIOMotorDatabase
 ):
-    pass
-
-
-async def main():
-    # TODO: Need to refactor the mp3 and transcript_file checks
     mp3_file_name = None
     transcript_file_name = None
 
+    note_id = upload["note_id"]
+    s3_key = upload["s3_key"]
+
     try:
-        mongo_db = create_mongodb_instance()
 
-        while True:
-            # For MVP, will only dequee one SQS message at a time.
-            incoming_sqs_msg = get_extractor_sqs_request()
-            message_list = incoming_sqs_msg.get("Messages", [])
+        # 1) Download the audio file.
+        audio_download_start_time = time.time()
 
-            print(f"incoming_sqs_msg in main(): {incoming_sqs_msg}")
+        video_title = await asyncio.to_thread(
+            download_video_or_audio, s3_key, PYTHON_MODE
+        )
 
-            if len(message_list) == 0:
-                continue
+        if not video_title:
+            raise ValueError("Video download failed.")
 
-            popped_sqs_payload = message_list.pop()
-            sqs_message_body = json.loads(popped_sqs_payload.get("Body", {}))
+    except ValueError as e:
+        if mp3_file_name:
+            delete_local_file(mp3_file_name)
+        if transcript_file_name:
+            delete_local_file(transcript_file_name)
 
-            user_id = sqs_message_body.get("user_id", None)
-            media_uploads: List[s3MediaUpload] = sqs_message_body.get(
-                "media_uploads", None
+        mp3_file_name = None
+        transcript_file_name = None
+
+        print(f"❌ Value Error in main function: {e}")
+
+
+async def main():
+
+    mongo_db = create_mongodb_instance()
+
+    while True:
+        # For MVP, will only dequee one SQS message at a time.
+        incoming_sqs_msg = get_extractor_sqs_request()
+        message_list = incoming_sqs_msg.get("Messages", [])
+
+        print(f"incoming_sqs_msg in main(): {incoming_sqs_msg}")
+
+        if len(message_list) == 0:
+            continue
+
+        popped_sqs_payload = message_list.pop()
+        sqs_message_body = json.loads(popped_sqs_payload.get("Body", {}))
+
+        user_id = sqs_message_body.get("user_id", None)
+        media_uploads: List[s3MediaUpload] = sqs_message_body.get("media_uploads", None)
+
+        if s3_client is None or media_uploads is None or user_id is None:
+            raise ValueError(
+                f"Missing critical functionality like s3_client, user_id {user_id}, or media_uploads. Can't continue with media extraction."
             )
 
-            if s3_client is None or media_uploads is None or user_id is None:
-                raise ValueError(
-                    f"Missing critical functionality like s3_client, user_id {user_id}, or media_uploads. Can't continue with media extraction."
-                )
+        tasks: List[Coroutine] = [
+            process_media_upload(upload, user_id, mongo_db) for upload in media_uploads
+        ]
 
-            tasks: List[Coroutine] = [
-                process_media_upload(upload, user_id, mongo_db)
-                for upload in media_uploads
-            ]
-
-            """
-            # 1) Download the audio file.
-            audio_download_start_time = time.time()
-
-            # TODO: Use ProcessPoolExecutor for media_uploads? 🤔
-
-            video_title = download_video_or_audio(s3_key, PYTHON_MODE)
+        """
 
             audio_download_end_time = time.time()
             audio_elapsed_time = audio_download_end_time - audio_download_start_time
@@ -160,8 +175,6 @@ async def main():
 
             delete_extractor_sqs_message(popped_sqs_payload)
 
-            """
-
     except ValueError as e:
         if mp3_file_name:
             delete_local_file(mp3_file_name)
@@ -172,6 +185,8 @@ async def main():
         transcript_file_name = None
 
         print(f"❌ Value Error in main function: {e}")
+
+            """
 
 
 if __name__ == "__main__":
