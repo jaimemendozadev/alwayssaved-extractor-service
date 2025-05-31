@@ -74,9 +74,18 @@ async def process_media_upload(
 
         mp3_file_name = f"{video_title}.mp3"
 
+        # 2) Transcribe audio file.
+        transcribe_start_time = time.time()
+
         # CPU-bound transcription
         transcript_file_name = await asyncio.get_event_loop().run_in_executor(
             process_pool, transcribe_in_process, video_title
+        )
+
+        transcribe_end_time = time.time()
+        transcribe_elapsed_time = transcribe_end_time - transcribe_start_time
+        print(
+            f"Elapsed time for {video_title} transcribing: {transcribe_elapsed_time} seconds"
         )
 
         if not transcript_file_name:
@@ -125,17 +134,7 @@ async def main():
 
         """
 
-            audio_download_end_time = time.time()
-            audio_elapsed_time = audio_download_end_time - audio_download_start_time
 
-            print(f"Elapsed time for audio download: {audio_elapsed_time} seconds")
-
-            if video_title is None:
-                raise ValueError(
-                    "Video File was not downloaded. Cannot proceed any further."
-                )
-
-            mp3_file_name = f"{video_title}.mp3"
 
             # 2) Transcribe audio file.
             transcribe_start_time = time.time()
