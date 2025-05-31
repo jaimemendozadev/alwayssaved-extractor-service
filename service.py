@@ -6,10 +6,12 @@ import asyncio
 import json
 import os
 from concurrent.futures import ProcessPoolExecutor
+from typing import Coroutine, List
 
 import boto3
 import torch
 from dotenv import load_dotenv
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from services.audio_extractor.main import delete_local_file
 from services.aws.sqs import (
@@ -31,6 +33,12 @@ s3_client = boto3.client("s3", region_name=AWS_REGION)
 WHISPER_MODEL_NAME = "turbo"
 
 process_pool = ProcessPoolExecutor(max_workers=2)  # Tune based on GPU capacity
+
+
+async def process_media_upload(
+    upload: dict, user_id: str, mongo_db: AsyncIOMotorDatabase
+):
+    pass
 
 
 async def main():
@@ -61,6 +69,11 @@ async def main():
                 raise ValueError(
                     f"Missing critical functionality like s3_client, user_id {user_id}, or media_uploads. Can't continue with media extraction."
                 )
+
+            tasks: List[Coroutine] = [
+                process_media_upload(upload, user_id, mongo_db)
+                for upload in media_uploads
+            ]
 
             """
             # 1) Download the audio file.
