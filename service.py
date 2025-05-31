@@ -62,6 +62,13 @@ async def process_media_upload(
             download_video_or_audio, s3_key, PYTHON_MODE
         )
 
+        audio_download_end_time = time.time()
+        audio_elapsed_time = audio_download_end_time - audio_download_start_time
+
+        print(
+            f"Elapsed time for {video_title} audio download: {audio_elapsed_time} seconds"
+        )
+
         if not video_title:
             raise ValueError("Video download failed.")
 
