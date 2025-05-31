@@ -18,6 +18,7 @@ from services.aws.sqs import (
     get_extractor_sqs_request,
 )
 from services.utils.mongodb.main import create_mongodb_instance
+from services.utils.types.main import s3MediaUpload
 
 load_dotenv()
 
@@ -36,7 +37,7 @@ process_pool = ProcessPoolExecutor(max_workers=2)  # Tune based on GPU capacity
 
 
 async def process_media_upload(
-    upload: dict, user_id: str, mongo_db: AsyncIOMotorDatabase
+    upload: s3MediaUpload, user_id: str, mongo_db: AsyncIOMotorDatabase
 ):
     pass
 
@@ -63,7 +64,9 @@ async def main():
             sqs_message_body = json.loads(popped_sqs_payload.get("Body", {}))
 
             user_id = sqs_message_body.get("user_id", None)
-            media_uploads = sqs_message_body.get("media_uploads", None)
+            media_uploads: List[s3MediaUpload] = sqs_message_body.get(
+                "media_uploads", None
+            )
 
             if s3_client is None or media_uploads is None or user_id is None:
                 raise ValueError(
