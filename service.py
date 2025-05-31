@@ -97,6 +97,8 @@ async def main():
             if transcript_file_name is None:
                 raise ValueError("Audio was not transcribed. Cannot proceed further")
 
+            # TODO Need to update s3_key with following format: /{fileOwner}/{noteID}/{fileID}/{fileName}.{fileExtension}
+
             base_s3_key = f"{user_id}/{note_id}"
 
             # 3) Upload the mp3 audio and transcript to s3.
@@ -161,17 +163,25 @@ if __name__ == "__main__":
 
 # pylint: disable=W0105
 """
-Dev Notes 5/10/25:
+Dev Notes 5/31/25:
 
-- Decided to organize media uploads and call each upload a "Note".
-- If the Note is an .mp3 or .mp4, a Note is created for that file and it'll get uploaded on the Frontend to s3 at /{userID}/{noteID}/{fileName}.{fileExtension}
-- When SQS messages arrives in Extractor service, will transcribe and upload the transcript to s3 at /{userID}/{noteID}/{fileName}.txt
+- Decided to organize media uploads as "Files" and all Files belong to a "Note".
+- In v1: Users upload .mp4 Video file(s) on the Frontend. A single "Note" document is created. A File document with the parent note_id is created for each video upload.
+- When SQS messages arrives in Extractor service, will transcribe and upload the transcript to s3 at /{fileOwner}/{noteID}/{fileID}/{fileName}.txt
 - Incoming SQS Message has the following shape:
-  {
-     note_id: ObjectID;
-     user_id: ObjectID;
-     s3_key: string;
-  }
+
+  [
+    {
+      user_id: string;
+      media_uploads: [
+        {
+         note_id: ObjectID;
+         user_id: ObjectID;
+         s3_key: string;
+        }
+      ]
+    }
+  ]
 
 
 - Outgoing SQS Message has the following shape (may get redone):
@@ -181,4 +191,5 @@ Dev Notes 5/10/25:
     transcript_bucket: string;
     transcript_key: string;
 }
+
 """

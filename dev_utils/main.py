@@ -11,9 +11,6 @@ from dotenv import load_dotenv
 
 from services.aws.ssm import get_secret
 
-# from services.aws.ssm import get_secret
-
-
 if TYPE_CHECKING:
     from mypy_boto3_sqs import SQSClient
 
@@ -56,17 +53,26 @@ def _generate_fake_sqs_msg(python_mode: str) -> Dict[str, Any]:
 
     fake_payload: Dict[str, Any] = {"Messages": []}
 
+    user_id = str(ObjectId())
+
     fake_payload["Messages"].append(
         {
             "MessageId": str(uuid.uuid4()),
             "ReceiptHandle": str(uuid.uuid4()),
             "Body": json.dumps(
                 {
-                    "note_id": str(ObjectId()),
-                    "user_id": str(ObjectId()),
-                    "s3_key": (
-                        youtube_url if python_mode == "development" else s3_video_url
-                    ),
+                    "user_id": user_id,
+                    "media_uploads": [
+                        {
+                            "note_id": str(ObjectId()),
+                            "user_id": user_id,
+                            "s3_key": (
+                                youtube_url
+                                if python_mode == "development"
+                                else s3_video_url
+                            ),
+                        }
+                    ],
                 }
             ),
         }
@@ -89,10 +95,17 @@ def _send_one_extractor_sqs_message(test_s3_url: str) -> None:
         return
 
     try:
+        user_id = str(ObjectId())
+
         test_payload = {
-            "note_id": str(ObjectId()),
-            "user_id": str(ObjectId()),
-            "s3_key": test_s3_url,
+            "user_id": user_id,
+            "media_uploads": [
+                {
+                    "note_id": str(ObjectId()),
+                    "user_id": user_id,
+                    "s3_key": test_s3_url,
+                }
+            ],
         }
 
         print(f"sending test_payload to Extractor Service: {test_payload} \n")
