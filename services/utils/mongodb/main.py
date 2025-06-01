@@ -2,12 +2,12 @@
 MongoDB util functions file.
 """
 
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from pymongo import AsyncMongoClient
 
 from services.aws.ssm import get_secret
 
 
-def create_mongodb_instance() -> AsyncIOMotorDatabase:
+def create_mongodb_instance() -> AsyncMongoClient:
     mongo_db_user = get_secret("/alwayssaved/MONGO_DB_USER")
 
     mongo_db_password = get_secret("/alwayssaved/MONGO_DB_PASSWORD")
@@ -30,6 +30,17 @@ def create_mongodb_instance() -> AsyncIOMotorDatabase:
     connection_string = f"mongodb+srv://{mongo_db_user}:{mongo_db_password}@{mongo_db_base_uri}/{mongo_db_name}?retryWrites=true&w=majority&appName={mongo_db_cluster_name}"
 
     # Create a new client and connect to the server
-    client: AsyncIOMotorClient = AsyncIOMotorClient(connection_string)
+    client = AsyncMongoClient(connection_string)
 
-    return client[mongo_db_name]
+    return client
+
+
+"""
+Notes:
+
+Refactored MongoDB using pymongo to avoid Motor deprecation issues.
+
+Links:
+ - https://www.mongodb.com/docs/languages/python/pymongo-driver/current/reference/migration/
+ - https://pymongo.readthedocs.io/en/4.13.0/tutorial.html
+"""
