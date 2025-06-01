@@ -20,6 +20,7 @@ from services.audio_transcription.main import transcribe_audio_file
 from services.aws.s3 import upload_s3_file_record_in_db
 from services.aws.sqs import (
     get_extractor_sqs_request,
+    send_embedding_sqs_message,
 )
 from services.utils.mongodb.main import create_mongodb_instance
 from services.utils.types.main import s3MediaUpload
@@ -121,7 +122,22 @@ async def process_media_upload(
                 f"Transcript ({transcript_payload}) or mp3 audio ({audio_payload}) file was not uploaded to s3. Cannot proceed further."
             )
 
-        # TODO Left off here on 5/31/25
+        # 4) Delete local files, reset local variables.
+        delete_local_file(f"{video_title}.mp3")
+        mp3_file_name = None
+
+        delete_local_file(f"{video_title}.txt")
+        transcript_file_name = None
+
+        # 5) Send SQS Message to embedding queue & delete old processed SQS message.
+        await asyncio.to_thread(
+            send_embedding_sqs_message,
+            {
+                "note_id": note_id,
+                "user_id": user_id,
+                "transcript_key": transcript_payload.get("s3_key", ""),
+            },
+        )
 
     except ValueError as e:
         if mp3_file_name:
@@ -165,18 +181,12 @@ async def main():
             for upload in media_uploads
         ]
 
+        # TODO Left off here on 5/31/25
+
         """
 
 
 
-
-
-            # 6) Delete local files, reset local variables.
-            delete_local_file(f"{video_title}.mp3")
-            mp3_file_name = None
-
-            delete_local_file(f"{video_title}.txt")
-            transcript_file_name = None
 
             # 6) Send SQS Message to embedding queue & delete old processed SQS message.
             embedding_payload = {

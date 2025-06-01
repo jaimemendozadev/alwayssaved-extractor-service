@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, Dict, TypedDict
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
-from bson import ObjectId
 
 from services.aws.ssm import get_secret
 
@@ -40,8 +39,9 @@ def get_extractor_sqs_request() -> Dict[str, Any]:
 
 
 class EmbeddingPayload(TypedDict):
-    note_id: ObjectId
-    transcript_url: str
+    note_id: str
+    user_id: str
+    transcript_key: str
 
 
 def send_embedding_sqs_message(sqs_payload: EmbeddingPayload) -> None:
@@ -62,19 +62,23 @@ def send_embedding_sqs_message(sqs_payload: EmbeddingPayload) -> None:
         )
 
         print(
-            f"✅ SQS Message Sent in send_embedding_sqs_message! Message ID: {response['MessageId']}"
+            f"✅ SQS Message Sent in send_embedding_sqs_message for s3_key {sqs_payload['transcript_key']}! Message ID: {response['MessageId']}"
         )
 
     except ClientError as e:
         print(
-            f"❌ AWS Client Error sending SQS message in send_embedding_sqs_message: {e.response['Error']['Message']}"
+            f"❌ AWS Client Error sending SQS message in send_embedding_sqs_message for s3_key {sqs_payload['transcript_key']}: {e.response['Error']['Message']}"
         )
 
     except BotoCoreError as e:
-        print(f"❌ Boto3 Internal Error in send_embedding_sqs_message: {str(e)}")
+        print(
+            f"❌ Boto3 Internal Error in send_embedding_sqs_message for s3_key {sqs_payload['transcript_key']}: {str(e)}"
+        )
 
     except Exception as e:
-        print(f"❌ Unexpected Error in send_embedding_sqs_message: {str(e)}")
+        print(
+            f"❌ Unexpected Error in send_embedding_sqs_message for s3_key {sqs_payload['transcript_key']}: {str(e)}"
+        )
 
 
 def delete_extractor_sqs_message(incoming_sqs_msg: Dict[str, Any]) -> None:
