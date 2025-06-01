@@ -93,12 +93,22 @@ async def process_media_upload(
         if not transcript_file_name:
             raise ValueError(f"Transcription for {video_title} failed.")
 
-        base_s3_key = f"{user_id}/{note_id}"
-
         # 3) Upload the mp3 audio and transcript to s3.
         audio_payload, transcript_payload = await asyncio.gather(
-            upload_to_s3(s3_client, mongo_client, base_s3_key, mp3_file_name),
-            upload_to_s3(s3_client, mongo_client, base_s3_key, transcript_file_name),
+            upload_to_s3(
+                s3_client,
+                mongo_client,
+                {"file_name": mp3_file_name, "user_id": user_id, "note_id": note_id},
+            ),
+            upload_to_s3(
+                s3_client,
+                mongo_client,
+                {
+                    "file_name": transcript_file_name,
+                    "user_id": user_id,
+                    "note_id": note_id,
+                },
+            ),
         )
 
     except ValueError as e:
