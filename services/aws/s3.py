@@ -2,13 +2,18 @@ import os
 
 import boto3
 import boto3.exceptions
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from services.aws.ssm import get_secret
 from services.utils.types.main import FilePayload
 
 
-def upload_to_s3(
-    s3_client: boto3.client, base_s3_key: str, file_name: str
+# TODO Need to create a new File document with s3_key in the following format: /{fileOwner}/{noteID}/{fileID}/{fileName}.{fileExtension}
+async def upload_to_s3(
+    s3_client: boto3.client,
+    mongo_client: AsyncIOMotorDatabase,
+    base_s3_key: str,
+    file_name: str,
 ) -> FilePayload:
     """
     base_s3_key is "{user_id}/{note_id}"

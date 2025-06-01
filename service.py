@@ -17,6 +17,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from services.audio_extractor.main import delete_local_file, download_video_or_audio
 from services.audio_transcription.main import transcribe_audio_file
+from services.aws.s3 import upload_to_s3
 from services.aws.sqs import (
     get_extractor_sqs_request,
 )
@@ -45,7 +46,7 @@ def transcribe_in_process(video_title: str) -> str | None:
 
 
 async def process_media_upload(
-    upload: s3MediaUpload, user_id: str, mongo_db: AsyncIOMotorDatabase
+    upload: s3MediaUpload, user_id: str, mongo_client: AsyncIOMotorDatabase
 ):
     mp3_file_name = None
     transcript_file_name = None
@@ -84,12 +85,21 @@ async def process_media_upload(
 
         transcribe_end_time = time.time()
         transcribe_elapsed_time = transcribe_end_time - transcribe_start_time
+
         print(
             f"Elapsed time for {video_title} transcribing: {transcribe_elapsed_time} seconds"
         )
 
         if not transcript_file_name:
             raise ValueError(f"Transcription for {video_title} failed.")
+
+        base_s3_key = f"{user_id}/{note_id}"
+
+        # 3) Upload the mp3 audio and transcript to s3.
+        audio_payload, transcript_payload = await asyncio.gather(
+            upload_to_s3(s3_client, mongo_client, base_s3_key, mp3_file_name),
+            upload_to_s3(s3_client, mongo_client, base_s3_key, transcript_file_name),
+        )
 
     except ValueError as e:
         if mp3_file_name:
@@ -105,7 +115,7 @@ async def process_media_upload(
 
 async def main():
 
-    mongo_db = create_mongodb_instance()
+    mongo_client = create_mongodb_instance()
 
     while True:
         # For MVP, will only dequee one SQS message at a time.
@@ -129,25 +139,12 @@ async def main():
             )
 
         tasks: List[Coroutine] = [
-            process_media_upload(upload, user_id, mongo_db) for upload in media_uploads
+            process_media_upload(upload, user_id, mongo_client)
+            for upload in media_uploads
         ]
 
         """
 
-
-
-            # 2) Transcribe audio file.
-            transcribe_start_time = time.time()
-
-            transcript_file_name = transcribe_audio_file(video_title, whisper_model)
-
-            transcribe_end_time = time.time()
-
-            transcribe_elapsed_time = transcribe_end_time - transcribe_start_time
-            print(f"Elapsed time for transcribing: {transcribe_elapsed_time} seconds")
-
-            if transcript_file_name is None:
-                raise ValueError("Audio was not transcribed. Cannot proceed further")
 
             # TODO Need to update s3_key with following format: /{fileOwner}/{noteID}/{fileID}/{fileName}.{fileExtension}
 
