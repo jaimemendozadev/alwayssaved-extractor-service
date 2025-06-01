@@ -111,6 +111,16 @@ async def process_media_upload(
             ),
         )
 
+        if not all(
+            [
+                audio_payload.get("s3_key"),
+                transcript_payload.get("s3_key"),
+            ]
+        ):
+            raise ValueError(
+                f"Transcript ({transcript_payload}) or mp3 audio ({audio_payload}) file was not uploaded to s3. Cannot proceed further."
+            )
+
         # TODO Left off here on 5/31/25
 
     except ValueError as e:
@@ -158,25 +168,8 @@ async def main():
         """
 
 
-            # TODO Need to update s3_key with following format: /{fileOwner}/{noteID}/{fileID}/{fileName}.{fileExtension}
 
-            if (
-                transcript_payload.get("s3_bucket", "") == ""
-                or transcript_payload.get("s3_key", "") == ""
-                or audio_payload.get("s3_bucket", "") == ""
-                or audio_payload.get("s3_key", "") == ""
-            ):
-                raise ValueError(
-                    f"Transcript ({transcript_payload}) or mp3 audio ({audio_payload}) file was not uploaded to s3. Cannot proceed further."
-                )
 
-            # 5) Update MongoDB and delete local files.
-            await create_note_files(
-                video_title=video_title,
-                note_payload={"user_id": user_id, "note_id": note_id},
-                file_payloads=[audio_payload, transcript_payload],
-                mongo_client=mongo_db,
-            )
 
             # 6) Delete local files, reset local variables.
             delete_local_file(f"{video_title}.mp3")
