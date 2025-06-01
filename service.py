@@ -13,7 +13,7 @@ import boto3
 import torch
 import whisper
 from dotenv import load_dotenv
-from motor.motor_asyncio import AsyncIOMotorDatabase
+from pymongo import AsyncMongoClient
 
 from services.audio_extractor.main import delete_local_file, download_video_or_audio
 from services.audio_transcription.main import transcribe_audio_file
@@ -48,7 +48,7 @@ def transcribe_in_process(video_title: str) -> str | None:
 
 
 async def process_media_upload(
-    upload: s3MediaUpload, user_id: str, mongo_client: AsyncIOMotorDatabase
+    upload: s3MediaUpload, user_id: str, mongo_client: AsyncMongoClient
 ):
     mp3_file_name = None
     transcript_file_name = None

@@ -2,7 +2,7 @@ import os
 
 import boto3
 import boto3.exceptions
-from motor.motor_asyncio import AsyncIOMotorDatabase
+from pymongo import AsyncMongoClient
 
 from services.aws.ssm import get_secret
 from services.utils.types.main import BaseFilePayload, FilePayload
@@ -11,7 +11,7 @@ from services.utils.types.main import BaseFilePayload, FilePayload
 # TODO Need to create a new File document with s3_key in the following format: /{fileOwner}/{noteID}/{fileID}/{fileName}.{fileExtension}
 async def upload_s3_file_record_in_db(
     s3_client: boto3.client,
-    mongo_client: AsyncIOMotorDatabase,
+    mongo_client: AsyncMongoClient,
     base_file_payload: BaseFilePayload,
 ) -> FilePayload:
     """
@@ -50,7 +50,9 @@ async def upload_s3_file_record_in_db(
             "file_type": file_extension,
         }
 
-        await mongo_client["files"].insert_one(new_file_payload)
+        await mongo_client.get_database("alwayssaved").get_collection(
+            "files"
+        ).insert_one(new_file_payload)
 
         return {"s3_key": target_s3_key}
 
