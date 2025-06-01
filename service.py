@@ -19,6 +19,7 @@ from services.audio_extractor.main import delete_local_file, download_video_or_a
 from services.audio_transcription.main import transcribe_audio_file
 from services.aws.s3 import upload_s3_file_record_in_db
 from services.aws.sqs import (
+    delete_extractor_sqs_message,
     get_extractor_sqs_request,
     send_embedding_sqs_message,
 )
@@ -181,38 +182,12 @@ async def main():
             for upload in media_uploads
         ]
 
-        # TODO Left off here on 5/31/25
+        await asyncio.gather(*tasks)
 
-        """
+        # 6) Delete old processed SQS message.
 
-
-
-
-            # 6) Send SQS Message to embedding queue & delete old processed SQS message.
-            embedding_payload = {
-                "note_id": note_id,
-                "user_id": user_id,
-                "transcript_bucket": transcript_payload.get("s3_bucket"),
-                "transcript_key": transcript_payload.get("s3_key"),
-            }
-
-            # TODO: May have to reevaluate payload shape that gets sent to embedding service
-            send_embedding_sqs_message(embedding_payload)
-
-            delete_extractor_sqs_message(popped_sqs_payload)
-
-    except ValueError as e:
-        if mp3_file_name:
-            delete_local_file(mp3_file_name)
-        if transcript_file_name:
-            delete_local_file(transcript_file_name)
-
-        mp3_file_name = None
-        transcript_file_name = None
-
-        print(f"❌ Value Error in main function: {e}")
-
-            """
+        # 5/31/25 TODO: Review delete_extractor_sqs_message
+        delete_extractor_sqs_message(popped_sqs_payload)
 
 
 if __name__ == "__main__":
@@ -245,7 +220,7 @@ Dev Notes 5/31/25:
 {
     note_id: string;
     user_id: string;
-    transcript_bucket: string;
+    transcript_bucket: string; // TODO: get bucket_name from Parameter store in embedding service.
     transcript_key: string;
 }
 
