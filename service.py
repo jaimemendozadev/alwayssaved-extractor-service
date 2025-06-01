@@ -157,6 +157,10 @@ async def main():
     mongo_client = create_mongodb_instance()
 
     while True:
+
+        if mongo_client is None:
+            continue
+
         # For MVP, will only dequee one SQS message at a time.
         incoming_sqs_msg = get_extractor_sqs_request()
         message_list = incoming_sqs_msg.get("Messages", [])
