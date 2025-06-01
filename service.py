@@ -189,8 +189,6 @@ async def main():
         await asyncio.gather(*tasks)
 
         # 6) Delete old processed SQS message.
-
-        # 5/31/25 TODO: Review delete_extractor_sqs_message
         delete_extractor_sqs_message(popped_sqs_payload)
 
 
@@ -199,7 +197,7 @@ if __name__ == "__main__":
 
 # pylint: disable=W0105
 """
-Dev Notes 5/31/25:
+Notes:
 
 - Decided to organize media uploads as "Files" and all Files belong to a "Note".
 - In v1: Users upload .mp4 Video file(s) on the Frontend. A single "Note" document is created. A File document with the parent note_id is created for each video upload.
@@ -220,12 +218,11 @@ Dev Notes 5/31/25:
   ]
 
 
-- Outgoing SQS Message has the following shape (may get redone):
-{
-    note_id: string;
-    user_id: string;
-    transcript_bucket: string; // TODO: get bucket_name from Parameter store in embedding service.
-    transcript_key: string;
-}
+- Outgoing SQS Message has the following shape:
+  {
+      note_id: string;
+      user_id: string;
+      transcript_key: string;
+  }
 
 """
