@@ -17,7 +17,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from services.audio_extractor.main import delete_local_file, download_video_or_audio
 from services.audio_transcription.main import transcribe_audio_file
-from services.aws.s3 import upload_to_s3
+from services.aws.s3 import upload_s3_file_record_in_db
 from services.aws.sqs import (
     get_extractor_sqs_request,
 )
@@ -93,14 +93,14 @@ async def process_media_upload(
         if not transcript_file_name:
             raise ValueError(f"Transcription for {video_title} failed.")
 
-        # 3) Upload the mp3 audio and transcript to s3.
+        # 3) Upload the mp3 audio and transcript to s3 and create File document.
         audio_payload, transcript_payload = await asyncio.gather(
-            upload_to_s3(
+            upload_s3_file_record_in_db(
                 s3_client,
                 mongo_client,
                 {"file_name": mp3_file_name, "user_id": user_id, "note_id": note_id},
             ),
-            upload_to_s3(
+            upload_s3_file_record_in_db(
                 s3_client,
                 mongo_client,
                 {
@@ -110,6 +110,8 @@ async def process_media_upload(
                 },
             ),
         )
+
+        # TODO Left off here on 5/31/25
 
     except ValueError as e:
         if mp3_file_name:
@@ -157,15 +159,6 @@ async def main():
 
 
             # TODO Need to update s3_key with following format: /{fileOwner}/{noteID}/{fileID}/{fileName}.{fileExtension}
-
-            base_s3_key = f"{user_id}/{note_id}"
-
-            # 3) Upload the mp3 audio and transcript to s3.
-            audio_payload = upload_to_s3(s3_client, base_s3_key, f"{video_title}.mp3")
-
-            transcript_payload = upload_to_s3(
-                s3_client, base_s3_key, f"{video_title}.txt"
-            )
 
             if (
                 transcript_payload.get("s3_bucket", "") == ""

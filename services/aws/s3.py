@@ -16,7 +16,7 @@ class BaseFilePayload(TypedDict):
 
 
 # TODO Need to create a new File document with s3_key in the following format: /{fileOwner}/{noteID}/{fileID}/{fileName}.{fileExtension}
-async def upload_to_s3(
+async def upload_s3_file_record_in_db(
     s3_client: boto3.client,
     mongo_client: AsyncIOMotorDatabase,
     base_file_payload: BaseFilePayload,
