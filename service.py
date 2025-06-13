@@ -15,7 +15,10 @@ import whisper
 from dotenv import load_dotenv
 from pymongo import AsyncMongoClient
 
-from services.audio_extractor.main import delete_local_file, download_video_or_audio
+from services.audio_extractor.main import (
+    delete_local_file,
+    download_and_convert_from_s3,
+)
 from services.audio_transcription.main import transcribe_audio_file
 from services.aws.s3 import upload_s3_file_record_in_db
 from services.aws.sqs import (
@@ -61,9 +64,7 @@ async def process_media_upload(
         # 1) Download the audio file.
         audio_download_start_time = time.time()
 
-        video_title = await asyncio.to_thread(
-            download_video_or_audio, s3_key, PYTHON_MODE
-        )
+        video_title = await asyncio.to_thread(download_and_convert_from_s3, s3_key)
 
         audio_download_end_time = time.time()
         audio_elapsed_time = audio_download_end_time - audio_download_start_time
