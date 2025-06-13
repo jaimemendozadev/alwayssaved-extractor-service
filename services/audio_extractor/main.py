@@ -2,11 +2,16 @@ import logging
 import os
 import re
 import subprocess
+import time
 from typing import Any, Dict
 
+import boto3
 import yt_dlp
+from botocore.exceptions import ClientError
 
 from services.aws.ssm import get_secret
+
+s3_client = boto3.client("s3")
 
 
 def delete_local_file(file_path: str):
@@ -135,4 +140,54 @@ def download_video_or_audio(
         return None
     except Exception as e:
         print(f"❌ Unexpected Error in download_video_or_audio: {e}")
+        return None
+
+
+def download_with_retry(
+    bucket: str, s3_key: str, local_path: str, retries: int = 5, delay: int = 2
+):
+    """Try downloading from S3 with retries and exponential backoff."""
+    for attempt in range(retries):
+        try:
+            with open(local_path, "wb") as f:
+                s3_client.download_fileobj(bucket, s3_key, f)
+            if os.path.exists(local_path):
+                return
+        except ClientError as e:
+            if e.response["Error"]["Code"] in ["404", "403", "NoSuchKey"]:
+                wait = delay * (2**attempt)
+                logging.warning(f"S3 not ready yet. Retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                raise
+    raise Exception(f"Failed to download {s3_key} from S3 after {retries} attempts.")
+
+
+def download_and_convert_from_s3(s3_key: str) -> str | None:
+    """
+    Downloads an .mp4 file from S3 using the s3_key and converts it to .mp3.
+    Returns: sanitized video title (base filename without extension)
+    """
+
+    try:
+        bucket_name = get_secret("/alwayssaved/AWS_BUCKET")
+        if not bucket_name:
+            raise ValueError("AWS_BUCKET not set in SSM.")
+
+        base_filename = os.path.basename(s3_key)  # e.g., video1.mp4
+        base_title, _ = os.path.splitext(base_filename)
+        mp4_local_path = base_filename
+
+        print(f"📥 Downloading from S3: s3://{bucket_name}/{s3_key}")
+        download_with_retry(bucket_name, s3_key, mp4_local_path)
+
+        print(f"🎞️ Download complete: {mp4_local_path}")
+
+        video_title = convert_mp4_to_mp3(mp4_local_path, base_title)
+        print(f"✅ MP3 created: {video_title}.mp3")
+
+        return video_title
+
+    except Exception as e:
+        print(f"❌ Error in download_and_convert_from_s3: {e}")
         return None
