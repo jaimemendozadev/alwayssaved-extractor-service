@@ -27,7 +27,7 @@ from services.aws.sqs import (
     send_embedding_sqs_message,
 )
 from services.utils.mongodb.main import create_mongodb_instance
-from services.utils.types.main import s3MediaUpload
+from services.utils.types.main import ExtractorStatus, s3MediaUpload
 
 load_dotenv()
 
@@ -52,7 +52,7 @@ def transcribe_in_process(video_title: str) -> str | None:
 
 async def process_media_upload(
     upload: s3MediaUpload, user_id: str, mongo_client: AsyncMongoClient
-):
+) -> ExtractorStatus:
     mp3_file_name = None
     transcript_file_name = None
 
@@ -141,6 +141,9 @@ async def process_media_upload(
             },
         )
 
+        # 6) Return ExtractorStatus indicating success.
+        return {"s3_key": s3_key, "status": "success"}
+
     except ValueError as e:
         if mp3_file_name:
             delete_local_file(mp3_file_name)
@@ -151,6 +154,8 @@ async def process_media_upload(
         transcript_file_name = None
 
         print(f"❌ Value Error in process_media_upload function: {e}")
+
+        return {"s3_key": s3_key, "status": "failed"}
 
 
 async def main():
@@ -187,10 +192,22 @@ async def main():
             for upload in media_uploads
         ]
 
-        await asyncio.gather(*tasks)
+        results = await asyncio.gather(*tasks)
+        success_count = sum(1 for result in results if result["status"] == "success")
+        failure_count = len(results) - success_count
+
+        if success_count == 0:
+            # All failed → Don't delete → Let SQS redrive or DLQ
+            print("❌ All media uploads failed — skipping delete to allow DLQ redrive.")
+            return
 
         # 6) Delete old processed SQS message.
+        # ✅ At least one succeeded — go ahead and delete message
         delete_extractor_sqs_message(popped_sqs_payload)
+
+        print(
+            f"✅ Processed message with {success_count} successes and {failure_count} failures."
+        )
 
 
 if __name__ == "__main__":

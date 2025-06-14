@@ -15,3 +15,8 @@ class BaseFilePayload(TypedDict):
     user_id: str
     note_id: str
     file_name: str
+
+
+class ExtractorStatus(TypedDict):
+    s3_key: str
+    status: str
