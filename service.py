@@ -217,8 +217,10 @@ if __name__ == "__main__":
 """
 Notes:
 
-- Decided to organize media uploads as "Files" and all Files belong to a "Note".
-- In v1: Users upload .mp4 Video file(s) on the Frontend. A single "Note" document is created. A File document with the parent note_id is created for each video upload.
+- Media uploads are organized as "Files" and all Files belong to a "Note".
+- In v1: Users upload .mp4 Video file(s) on the Frontend where a single "Note" document is created.
+  - A File document with the parent note_id is created for each video upload.
+
 - When SQS messages arrives in Extractor service, will transcribe and upload the transcript to s3 at /{fileOwner}/{noteID}/{fileID}/{fileName}.txt
 - Incoming SQS Message has the following shape:
 
