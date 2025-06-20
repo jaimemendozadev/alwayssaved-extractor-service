@@ -6,7 +6,6 @@ import asyncio
 import json
 import os
 import time
-from concurrent.futures import ProcessPoolExecutor
 from typing import Coroutine, List
 
 import boto3
@@ -34,20 +33,20 @@ load_dotenv()
 # IMPORTANT: REMEMBER TO SET PYTHON_MODE in .env to 'production' when creating Docker image
 PYTHON_MODE = os.getenv("PYTHON_MODE", "production")
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-
 s3_client = boto3.client("s3", region_name=AWS_REGION)
-
-# Important: This model load must be re-done inside each subprocess due to ProcessPoolExecutor pickling rules.
-# We'll pass model name and reload in subprocess function.
 WHISPER_MODEL_NAME = "turbo"
-
-process_pool = ProcessPoolExecutor(max_workers=2)  # Tune based on GPU capacity
 
 
 def transcribe_in_process(video_title: str) -> str | None:
-    model = whisper.load_model(WHISPER_MODEL_NAME, device=DEVICE)
-    return transcribe_audio_file(video_title, model)
+    print(f"🔁 [subprocess] Starting transcription for: {video_title}")
+    try:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        print(f"💻 [subprocess] Using device: {device}")
+        model = whisper.load_model(WHISPER_MODEL_NAME, device=device)
+        return transcribe_audio_file(video_title, model)
+    except Exception as e:
+        print(f"❌ [subprocess] Failed in transcribe_in_process: {e}")
+        return None
 
 
 async def process_media_upload(
@@ -81,9 +80,8 @@ async def process_media_upload(
         # 2) Transcribe audio file.
         transcribe_start_time = time.time()
 
-        # CPU-bound transcription
-        transcript_file_name = await asyncio.get_event_loop().run_in_executor(
-            process_pool, transcribe_in_process, video_title
+        transcript_file_name = await asyncio.to_thread(
+            transcribe_in_process, video_title
         )
 
         transcribe_end_time = time.time()
@@ -212,6 +210,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 # pylint: disable=W0105
 """
