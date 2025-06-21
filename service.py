@@ -37,7 +37,7 @@ s3_client = boto3.client("s3", region_name=AWS_REGION)
 WHISPER_MODEL_NAME = "turbo"
 
 
-def transcribe_in_process(video_title: str) -> str | None:
+def transcribe_audio(video_title: str) -> str | None:
     print(f"🔁 [subprocess] Starting transcription for: {video_title}")
     try:
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -45,7 +45,7 @@ def transcribe_in_process(video_title: str) -> str | None:
         model = whisper.load_model(WHISPER_MODEL_NAME, device=device)
         return transcribe_audio_file(video_title, model)
     except Exception as e:
-        print(f"❌ [subprocess] Failed in transcribe_in_process: {e}")
+        print(f"❌ [subprocess] Failed in transcribe_audio: {e}")
         return None
 
 
@@ -80,9 +80,7 @@ async def process_media_upload(
         # 2) Transcribe audio file.
         transcribe_start_time = time.time()
 
-        transcript_file_name = await asyncio.to_thread(
-            transcribe_in_process, video_title
-        )
+        transcript_file_name = await asyncio.to_thread(transcribe_audio, video_title)
 
         transcribe_end_time = time.time()
         transcribe_elapsed_time = transcribe_end_time - transcribe_start_time
@@ -172,6 +170,7 @@ async def main():
         print(f"incoming_sqs_msg in main(): {incoming_sqs_msg}")
 
         if len(message_list) == 0:
+            print("No messages in SQS queue. Waiting...")
             continue
 
         popped_sqs_payload = message_list.pop()
