@@ -24,8 +24,10 @@ COPY requirements.txt .
 
 # Upgrade pip and install Python dependencies
 RUN python3 -m pip install --upgrade pip && \
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 && \
     pip install --no-cache-dir -r requirements.txt
+
+# Install GPU-enabled PyTorch explicitly (must come last to avoid overwrite)
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 # Copy rest of the application
 COPY . .
