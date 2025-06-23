@@ -161,7 +161,8 @@ async def main():
     while True:
 
         if mongo_client is None:
-            continue
+            print("❌ mongo_client unavailable. Can't run Extractor service.")
+            return
 
         # For MVP, will only dequee one SQS message at a time.
         incoming_sqs_msg = get_extractor_sqs_request()
@@ -196,15 +197,13 @@ async def main():
         if success_count == 0:
             # All failed → Don't delete → Let SQS redrive or DLQ
             print("❌ All media uploads failed — skipping delete to allow DLQ redrive.")
-            return
-
-        # 6) Delete old processed SQS message.
-        # ✅ At least one succeeded — go ahead and delete message
-        delete_extractor_sqs_message(popped_sqs_payload)
-
-        print(
-            f"✅ Processed message with {success_count} successes and {failure_count} failures."
-        )
+        else:
+            # 6) Delete old processed SQS message.
+            # # ✅ At least one succeeded — go ahead and delete message
+            delete_extractor_sqs_message(popped_sqs_payload)
+            print(
+                f"✅ Processed message with {success_count} successes and {failure_count} failures."
+            )
 
 
 if __name__ == "__main__":
