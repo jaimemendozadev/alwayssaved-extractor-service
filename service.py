@@ -30,6 +30,10 @@ from services.utils.types.main import ExtractorStatus, s3MediaUpload
 
 load_dotenv()
 
+# Force device detection once in main context
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"✅ [BOOT] Using device: {DEVICE}")
+
 # IMPORTANT: REMEMBER TO SET PYTHON_MODE in .env to 'production' when creating Docker image
 PYTHON_MODE = os.getenv("PYTHON_MODE", "production")
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
@@ -40,9 +44,9 @@ WHISPER_MODEL_NAME = "turbo"
 def transcribe_audio(video_title: str) -> str | None:
     print(f"🔁 [subprocess] Starting transcription for: {video_title}")
     try:
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        print(f"💻 [subprocess] Using device: {device}")
-        model = whisper.load_model(WHISPER_MODEL_NAME, device=device)
+        print(f"💻 [subprocess] Using device: {DEVICE}")
+        model = whisper.load_model(WHISPER_MODEL_NAME, device=str(DEVICE))
+        print(f"📦 Model loaded on: {next(model.parameters()).device}")
         return transcribe_audio_file(video_title, model)
     except Exception as e:
         print(f"❌ [subprocess] Failed in transcribe_audio: {e}")
