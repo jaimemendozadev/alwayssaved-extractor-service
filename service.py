@@ -160,6 +160,11 @@ async def process_media_upload(
         return {"s3_key": s3_key, "status": "failed"}
 
 
+# ────────────────────────────────────────────────────────────── #
+#                            MAIN LOOP                           #
+# ────────────────────────────────────────────────────────────── #
+
+
 async def main():
 
     mongo_client = create_mongodb_instance()
@@ -176,17 +181,18 @@ async def main():
 
         print(f"incoming_sqs_msg in main(): {incoming_sqs_msg}")
 
-        if len(message_list) == 0:
+        if not message_list:
             print("No messages in SQS queue. Waiting...")
+            await asyncio.sleep(5)
             continue
 
         popped_sqs_payload = message_list.pop()
         sqs_message_body = json.loads(popped_sqs_payload.get("Body", {}))
 
-        user_id = sqs_message_body.get("user_id", None)
-        media_uploads: List[s3MediaUpload] = sqs_message_body.get("media_uploads", None)
+        user_id = sqs_message_body.get("user_id")
+        media_uploads: List[s3MediaUpload] = sqs_message_body.get("media_uploads")
 
-        if s3_client is None or media_uploads is None or user_id is None:
+        if not (user_id and media_uploads):
             raise ValueError(
                 f"Missing critical functionality like s3_client, user_id {user_id}, or media_uploads. Can't continue with media extraction."
             )
