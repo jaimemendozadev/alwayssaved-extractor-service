@@ -28,17 +28,30 @@ from services.aws.sqs import (
 from services.utils.mongodb.main import create_mongodb_instance
 from services.utils.types.main import ExtractorStatus, s3MediaUpload
 
+# ────────────────────────────────────────────────────────────── #
+#                           GLOBAL INIT                          #
+# ────────────────────────────────────────────────────────────── #
+
 load_dotenv()
 
 # Force device detection once in main context
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"✅ [BOOT] Using device: {DEVICE}")
 
-# IMPORTANT: REMEMBER TO SET PYTHON_MODE in .env to 'production' when creating Docker image
-PYTHON_MODE = os.getenv("PYTHON_MODE", "production")
+WHISPER_MODEL_NAME = "base"  # Or turbo -> confirm this is valid
+WHISPER_MODEL = whisper.load_model(WHISPER_MODEL_NAME, device=str(DEVICE))
+print(f"✅ Model loaded on device: {next(WHISPER_MODEL.parameters()).device}")
+
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 s3_client = boto3.client("s3", region_name=AWS_REGION)
-WHISPER_MODEL_NAME = "turbo"
+
+
+# Global lock to serialize GPU access
+gpu_lock = asyncio.Lock()
+
+# ────────────────────────────────────────────────────────────── #
+#                       AUDIO TRANSCRIPTION                      #
+# ────────────────────────────────────────────────────────────── #
 
 
 def transcribe_audio(video_title: str) -> str | None:
@@ -53,27 +66,26 @@ def transcribe_audio(video_title: str) -> str | None:
         return None
 
 
+# ────────────────────────────────────────────────────────────── #
+#                       MEDIA PROCESSING                         #
+# ────────────────────────────────────────────────────────────── #
+
+
 async def process_media_upload(
     upload: s3MediaUpload, user_id: str, mongo_client: AsyncMongoClient
 ) -> ExtractorStatus:
     mp3_file_name = None
     transcript_file_name = None
-
     note_id = upload["note_id"]
     s3_key = upload["s3_key"]
 
     try:
-
         # 1) Download the audio file.
         audio_download_start_time = time.time()
-
         video_title = await asyncio.to_thread(download_and_convert_from_s3, s3_key)
-
-        audio_download_end_time = time.time()
-        audio_elapsed_time = audio_download_end_time - audio_download_start_time
-
+        audio_elapsed_time = time.time() - audio_download_start_time
         print(
-            f"Elapsed time for {video_title} audio download: {audio_elapsed_time} seconds"
+            f"Elapsed time for {video_title} audio download: {audio_elapsed_time:.2f}s"
         )
 
         if not video_title:
@@ -82,15 +94,13 @@ async def process_media_upload(
         mp3_file_name = f"{video_title}.mp3"
 
         # 2) Transcribe audio file.
-        transcribe_start_time = time.time()
-
-        transcript_file_name = await asyncio.to_thread(transcribe_audio, video_title)
-
-        transcribe_end_time = time.time()
-        transcribe_elapsed_time = transcribe_end_time - transcribe_start_time
+        async with gpu_lock:
+            transcribe_start_time = time.time()
+            transcript_file_name = transcribe_audio(video_title)
+            transcribe_elapsed_time = time.time() - transcribe_start_time
 
         print(
-            f"Elapsed time for {video_title} transcribing: {transcribe_elapsed_time} seconds"
+            f"Elapsed time for {video_title} transcribing: {transcribe_elapsed_time:.2f}s"
         )
 
         if not transcript_file_name:
@@ -114,21 +124,14 @@ async def process_media_upload(
             ),
         )
 
-        if not all(
-            [
-                audio_payload.get("s3_key"),
-                transcript_payload.get("s3_key"),
-            ]
-        ):
-            raise ValueError(
-                f"Transcript ({transcript_payload}) or mp3 audio ({audio_payload}) file was not uploaded to s3. Cannot proceed further."
-            )
+        if not all([audio_payload.get("s3_key"), transcript_payload.get("s3_key")]):
+            raise ValueError("Failed to upload audio or transcript to S3.")
 
         # 4) Delete local files, reset local variables.
-        delete_local_file(f"{video_title}.mp3")
+        delete_local_file(mp3_file_name)
         mp3_file_name = None
 
-        delete_local_file(f"{video_title}.txt")
+        delete_local_file(transcript_file_name)
         transcript_file_name = None
 
         # 5) Send SQS Message to embedding queue & delete old processed SQS message.
@@ -137,23 +140,22 @@ async def process_media_upload(
             {
                 "note_id": note_id,
                 "user_id": user_id,
-                "transcript_key": transcript_payload.get("s3_key", ""),
+                "transcript_key": transcript_payload["s3_key"],
             },
         )
 
-        # 6) Return ExtractorStatus indicating success.
         return {"s3_key": s3_key, "status": "success"}
 
     except ValueError as e:
+        print(f"❌ Value Error in process_media_upload function: {e}")
         if mp3_file_name:
             delete_local_file(mp3_file_name)
+
         if transcript_file_name:
             delete_local_file(transcript_file_name)
 
         mp3_file_name = None
         transcript_file_name = None
-
-        print(f"❌ Value Error in process_media_upload function: {e}")
 
         return {"s3_key": s3_key, "status": "failed"}
 
