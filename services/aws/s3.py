@@ -67,7 +67,7 @@ async def upload_s3_file_record_in_db(
             {"_id": ObjectId(new_file_id)}, {"$set": {"s3_key": target_s3_key}}
         )
 
-        return {"s3_key": target_s3_key}
+        return {"s3_key": target_s3_key, "file_id": new_file_id}
 
     except boto3.exceptions.S3UploadFailedError as e:
         print(f"❌ Error uploading file to s3 in upload_to_s3: {e}")
@@ -78,4 +78,4 @@ async def upload_s3_file_record_in_db(
     except ValueError as e:
         print(f"❌ Value Error in upload_to_s3: {e}")
 
-    return {"s3_key": ""}
+    return {"s3_key": "", "file_id": ""}

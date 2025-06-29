@@ -124,7 +124,14 @@ async def process_media_upload(
             ),
         )
 
-        if not all([audio_payload.get("s3_key"), transcript_payload.get("s3_key")]):
+        if not all(
+            [
+                audio_payload.get("s3_key"),
+                audio_payload.get("file_id"),
+                transcript_payload.get("s3_key"),
+                transcript_payload.get("file_id"),
+            ]
+        ):
             raise ValueError("Failed to upload audio or transcript to S3.")
 
         # 4) Delete local files, reset local variables.
@@ -140,7 +147,8 @@ async def process_media_upload(
             {
                 "note_id": note_id,
                 "user_id": user_id,
-                "transcript_key": transcript_payload["s3_key"],
+                "file_id": transcript_payload["file_id"],
+                "transcript_s3_key": transcript_payload["s3_key"],
             },
         )
 
@@ -250,8 +258,9 @@ Notes:
 - Outgoing SQS Message has the following shape:
   {
       note_id: string;
+      file_id: string;
       user_id: string;
-      transcript_key: string;
+      transcript_s3_key: string;
   }
 
 """
