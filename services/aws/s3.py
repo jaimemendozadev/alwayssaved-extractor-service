@@ -55,7 +55,7 @@ async def upload_s3_file_record_in_db(
             .insert_one(new_file_payload)
         )
 
-        new_file_id = insert_result.inserted_id
+        new_file_id = str(insert_result.inserted_id)
 
         target_s3_key = f"{base_s3_key}/{new_file_id}/{file_name}"
 
