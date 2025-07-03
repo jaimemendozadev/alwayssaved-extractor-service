@@ -155,7 +155,9 @@ async def process_media_upload(
         return {"s3_key": s3_key, "status": "success"}
 
     except ValueError as e:
-        print(f"❌ Value Error in process_media_upload function: {e}")
+        print(
+            f"❌ Value Error in process_media_upload function for user {user_id} with note_id {note_id} and s3_key {s3_key}: {e}"
+        )
         if mp3_file_name:
             delete_local_file(mp3_file_name)
 
@@ -180,14 +182,14 @@ async def main():
     while True:
 
         if mongo_client is None:
-            print("❌ mongo_client unavailable. Can't run Extractor service.")
+            print(
+                "❌ App fails preliminary first check with mongo_client unavailable. Can't run Extractor service."
+            )
             return
 
         # For MVP, will only dequee one SQS message at a time.
         incoming_sqs_msg = get_extractor_sqs_request()
         message_list = incoming_sqs_msg.get("Messages", [])
-
-        print(f"incoming_sqs_msg in main(): {incoming_sqs_msg}")
 
         if not message_list:
             print("No messages in SQS queue. Waiting...")
@@ -195,6 +197,9 @@ async def main():
             continue
 
         popped_sqs_payload = message_list.pop()
+
+        message_id = popped_sqs_payload.get("MessageId", "")
+
         sqs_message_body = json.loads(popped_sqs_payload.get("Body", {}))
 
         user_id = sqs_message_body.get("user_id")
@@ -202,7 +207,7 @@ async def main():
 
         if not (user_id and media_uploads):
             raise ValueError(
-                f"Missing critical functionality like s3_client, user_id {user_id}, or media_uploads. Can't continue with media extraction."
+                f"❌ App fails preliminary second check. Incoming SQS Message {message_id} missing user_id or media_uploads. Can't continue with Extractor service."
             )
 
         tasks: List[Coroutine] = [
@@ -215,11 +220,10 @@ async def main():
         failure_count = len(results) - success_count
 
         if success_count == 0:
-            # All failed → Don't delete → Let SQS redrive or DLQ
+            # All failed -> Don't delete -> Let SQS redrive or DLQ
             print("❌ All media uploads failed — skipping delete to allow DLQ redrive.")
         else:
             # 6) Delete old processed SQS message.
-            # # ✅ At least one succeeded — go ahead and delete message
             delete_extractor_sqs_message(popped_sqs_payload)
             print(
                 f"✅ Processed message with {success_count} successes and {failure_count} failures."
@@ -263,4 +267,10 @@ Notes:
       transcript_s3_key: string;
   }
 
+
+TODO:
+  - Handle edge case where an SQS message with multiple file
+    transcriptions has a failure in the first attempt and the
+    second attempt succeeds, but there are dangling MongoDB
+    docs from the first attempt.
 """
