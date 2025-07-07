@@ -43,8 +43,8 @@ async def upload_s3_file_record_in_db(
         _, file_extension = os.path.splitext(file_name)
 
         new_file_payload = {
-            "user_id": user_id,
-            "note_id": note_id,
+            "user_id": ObjectId(user_id),
+            "note_id": ObjectId(note_id),
             "file_name": file_name,
             "file_type": file_extension,
         }
