@@ -124,6 +124,13 @@ async def process_media_upload(
             ),
         )
 
+        # 4) Delete local files, reset local variables.
+        delete_local_file(mp3_file_name)
+        mp3_file_name = None
+
+        delete_local_file(transcript_file_name)
+        transcript_file_name = None
+
         if not all(
             [
                 audio_payload.get("s3_key"),
@@ -133,13 +140,6 @@ async def process_media_upload(
             ]
         ):
             raise ValueError("Failed to upload audio or transcript to S3.")
-
-        # 4) Delete local files, reset local variables.
-        delete_local_file(mp3_file_name)
-        mp3_file_name = None
-
-        delete_local_file(transcript_file_name)
-        transcript_file_name = None
 
         # 5) Send SQS Message to embedding queue & delete old processed SQS message.
         await asyncio.to_thread(
