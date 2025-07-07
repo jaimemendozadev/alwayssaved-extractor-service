@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING, Any, Dict, List
 
 import boto3
+import yt_dlp
 from botocore.exceptions import BotoCoreError, ClientError
 from bson.objectid import ObjectId
 from dotenv import load_dotenv
@@ -14,33 +15,13 @@ from services.aws.ssm import get_secret
 if TYPE_CHECKING:
     from mypy_boto3_sqs import SQSClient
 
-youtube_url = "https://www.youtube.com/watch?v=k82RwXqZHY8"
-s3_video_url = (
-    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/How+China%E2%80%99s+New+AI+Model+DeepSeek+Is+Threatening+U.S.+Dominance.mp4",
-)
+youtube_url = ""
+s3_video_url = ()
 
 
-shorter_videos = [
-    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/Palmer+Luckey+Wants+to+Be+Silicon+Valley's+War+King+%EF%BD%9C+The+Circuit.mp4",
-    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/GM%E2%80%99s+%24280+Billion+Bet+on+EVs+%EF%BD%9C+Mary+Barra+%EF%BD%9C+The+Circuit+with+Emily+Chang.mp4",
-    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/When+JPMorgan+CEO+Jamie+Dimon+Speaks%2C+the+World+Listens+%EF%BD%9C+The+Circuit.mp4",
-    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/The+AI+Arsenal+That+Could+Stop+World+War+III+%EF%BD%9C+Palmer+Luckey+%EF%BD%9C+TED.mp4",
-]
+shorter_videos: List[str] = []
 
-s3_video_list = [
-    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/Geoffrey+Hinton+%EF%BD%9C+On+working+with+Ilya%2C+choosing+problems%2C+and+the+power+of+intuition.mp4",
-    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/How+China%E2%80%99s+New+AI+Model+DeepSeek+Is+Threatening+U.S.+Dominance.mp4",
-    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/Ilya+Sutskever%EF%BC%9A+Deep+Learning+%EF%BD%9C+Lex+Fridman+Podcast+%2394.mp4",
-    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/Jensen+Huang%2C+Founder+and+CEO+of+NVIDIA.mp4",
-    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/NVIDIA+CEO+Jensen+Huang's+Vision+for+the+Future.mp4",
-    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/Palmer+Luckey+Wants+to+Be+Silicon+Valley's+War+King+%EF%BD%9C+The+Circuit.mp4",
-    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/The+AI+Arsenal+That+Could+Stop+World+War+III+%EF%BD%9C+Palmer+Luckey+%EF%BD%9C+TED.mp4",
-    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/The+Race+to+Harness+Quantum+Computing's+Mind-Bending+Power+%EF%BD%9C+The+Future+With+Hannah+Fry.mp4",
-    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/Yann+LeCun%EF%BC%9A+Deep+Learning%2C+ConvNets%2C+and+Self-Supervised+Learning+%EF%BD%9C+Lex+Fridman+Podcast+%2336.mp4",
-    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/GM%E2%80%99s+%24280+Billion+Bet+on+EVs+%EF%BD%9C+Mary+Barra+%EF%BD%9C+The+Circuit+with+Emily+Chang.mp4",
-    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/When+JPMorgan+CEO+Jamie+Dimon+Speaks%2C+the+World+Listens+%EF%BD%9C+The+Circuit.mp4",
-    "https://notecasts.s3.us-east-1.amazonaws.com/680a6fbcf471715298de5000/Leading+in+a+Time+of+Change%EF%BC%9A+Jamie+Dimon%2C+Chairman+and+CEO%2C+JP+Morgan+Chase.mp4",
-]
+s3_video_list: List[str] = []
 
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 sqs_client: "SQSClient" = boto3.client("sqs", region_name=AWS_REGION)
@@ -157,4 +138,48 @@ def _upload_test_sqs_messages_to_extractor_queue(s3_urls: List[str]) -> None:
         print(f"❌ Unexpected Error in send_test_extractor_sqs_message: {str(e)} \n")
 
 
-_upload_test_sqs_messages_to_extractor_queue(shorter_videos)
+def _download_video_from_url(
+    video_url: str,
+) -> None:
+    """
+    development MODE: Download full .mp4, convert to .mp3, return path to .mp3
+    production MODE: Download .mp3 directly using yt_dlp
+    """
+
+    try:
+        print("📥 [DEV MODE] Downloading full MP4 from YouTube...")
+
+        ydl_opts: Dict[str, Any] = {
+            "format": "best[ext=mp4]/best",  # enforce a usable mp4 file
+            "merge_output_format": "mp4",
+            "outtmpl": "%(title)s.%(ext)s",  # still saves with YouTube title
+            "quiet": False,
+            "noplaylist": True,
+            "ignoreerrors": True,
+            "nopart": True,
+            "overwrites": True,
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(video_url, download=True)
+
+            # This gives you the actual, real filepath yt-dlp saved to
+            output_path = info.get("requested_downloads", [{}])[0].get("filepath")
+
+        if not output_path or not os.path.exists(output_path):
+            raise yt_dlp.DownloadError(f"❌ Full MP4 not downloaded: {output_path}")
+
+        print(f"✅ Downloaded video: {output_path}")
+
+    except yt_dlp.DownloadError as e:
+        print(f"❌ yt-dlp Error in download_video_or_audio: {e}")
+    except Exception as e:
+        print(f"❌ Unexpected Error in download_video_or_audio: {e}")
+
+    return None
+
+
+def _get_youtube_videos(youtube_urls: List[str]):
+    for url in youtube_urls:
+        print(f"🚀 Initiate {url} download...")
+        _download_video_from_url(url)

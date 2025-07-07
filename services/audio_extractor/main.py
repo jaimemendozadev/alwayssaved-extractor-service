@@ -3,10 +3,8 @@ import os
 import re
 import subprocess
 import time
-from typing import Any, Dict
 
 import boto3
-import yt_dlp
 from botocore.exceptions import ClientError
 
 from services.aws.ssm import get_secret
@@ -108,44 +106,3 @@ def download_and_convert_from_s3(s3_key: str) -> str | None:
     except Exception as e:
         print(f"❌ Error in download_and_convert_from_s3: {e}")
         return None
-
-
-def _download_video_from_url(
-    video_url: str,
-) -> None:
-    """
-    development MODE: Download full .mp4, convert to .mp3, return path to .mp3
-    production MODE: Download .mp3 directly using yt_dlp
-    """
-
-    try:
-        print("📥 [DEV MODE] Downloading full MP4 from YouTube...")
-
-        ydl_opts: Dict[str, Any] = {
-            "format": "best[ext=mp4]/best",  # enforce a usable mp4 file
-            "merge_output_format": "mp4",
-            "outtmpl": "%(title)s.%(ext)s",  # still saves with YouTube title
-            "quiet": False,
-            "noplaylist": True,
-            "ignoreerrors": True,
-            "nopart": True,
-            "overwrites": True,
-        }
-
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(video_url, download=True)
-
-            # This gives you the actual, real filepath yt-dlp saved to
-            output_path = info.get("requested_downloads", [{}])[0].get("filepath")
-
-        if not output_path or not os.path.exists(output_path):
-            raise yt_dlp.DownloadError(f"❌ Full MP4 not downloaded: {output_path}")
-
-        print(f"✅ Downloaded video: {output_path}")
-
-    except yt_dlp.DownloadError as e:
-        print(f"❌ yt-dlp Error in download_video_or_audio: {e}")
-    except Exception as e:
-        print(f"❌ Unexpected Error in download_video_or_audio: {e}")
-
-    return None
