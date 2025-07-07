@@ -125,11 +125,11 @@ async def process_media_upload(
         )
 
         # 4) Delete local files, reset local variables.
-        delete_local_file(mp3_file_name)
-        mp3_file_name = None
+        # delete_local_file(mp3_file_name)
+        # mp3_file_name = None
 
-        delete_local_file(transcript_file_name)
-        transcript_file_name = None
+        # delete_local_file(transcript_file_name)
+        # transcript_file_name = None
 
         if not all(
             [
@@ -152,7 +152,12 @@ async def process_media_upload(
             },
         )
 
-        return {"s3_key": s3_key, "status": "success"}
+        return {
+            "s3_key": s3_key,
+            "status": "success",
+            "mp3_file_name": mp3_file_name,
+            "transcript_file_name": transcript_file_name,
+        }
 
     except ValueError as e:
         print(
@@ -167,7 +172,12 @@ async def process_media_upload(
         mp3_file_name = None
         transcript_file_name = None
 
-        return {"s3_key": s3_key, "status": "failed"}
+        return {
+            "s3_key": s3_key,
+            "status": "failed",
+            "mp3_file_name": "",
+            "transcript_file_name": "",
+        }
 
 
 # ────────────────────────────────────────────────────────────── #
@@ -225,6 +235,10 @@ async def main():
         else:
             # 6) Delete old processed SQS message.
             delete_extractor_sqs_message(popped_sqs_payload)
+
+            for result in results:
+                delete_local_file(result["mp3_file_name"])
+                delete_local_file(result["transcript_file_name"])
             print(
                 f"✅ Processed message with {success_count} successes and {failure_count} failures."
             )

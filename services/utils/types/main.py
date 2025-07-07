@@ -21,3 +21,5 @@ class BaseFilePayload(TypedDict):
 class ExtractorStatus(TypedDict):
     s3_key: str
     status: str
+    mp3_file_name: str
+    transcript_file_name: str
