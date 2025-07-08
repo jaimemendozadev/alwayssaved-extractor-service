@@ -91,12 +91,17 @@ async def process_media_upload(
         if not video_title:
             raise ValueError("Video download failed.")
 
-        mp3_file_name = f"{video_title}.mp3"
+        # mp3_file_name = f"{video_title}.mp3"
+        mp3_file_name = os.path.abspath(f"{video_title}.mp3")
 
         # 2) Transcribe audio file.
         async with gpu_lock:
             transcribe_start_time = time.time()
-            transcript_file_name = transcribe_audio(video_title)
+            base_transcript_file_name = transcribe_audio(video_title)
+
+            if base_transcript_file_name:
+                transcript_file_name = os.path.abspath(base_transcript_file_name)
+
             transcribe_elapsed_time = time.time() - transcribe_start_time
 
         print(
@@ -125,11 +130,11 @@ async def process_media_upload(
         )
 
         # 4) Delete local files, reset local variables.
-        # delete_local_file(mp3_file_name)
-        # mp3_file_name = None
+        delete_local_file(mp3_file_name)
+        mp3_file_name = None
 
-        # delete_local_file(transcript_file_name)
-        # transcript_file_name = None
+        delete_local_file(transcript_file_name)
+        transcript_file_name = None
 
         if not all(
             [
@@ -155,8 +160,6 @@ async def process_media_upload(
         return {
             "s3_key": s3_key,
             "status": "success",
-            "mp3_file_name": mp3_file_name,
-            "transcript_file_name": transcript_file_name,
         }
 
     except ValueError as e:
@@ -175,8 +178,6 @@ async def process_media_upload(
         return {
             "s3_key": s3_key,
             "status": "failed",
-            "mp3_file_name": "",
-            "transcript_file_name": "",
         }
 
 
@@ -236,9 +237,6 @@ async def main():
             # 6) Delete old processed SQS message.
             delete_extractor_sqs_message(popped_sqs_payload)
 
-            for result in results:
-                delete_local_file(result["mp3_file_name"])
-                delete_local_file(result["transcript_file_name"])
             print(
                 f"✅ Processed message with {success_count} successes and {failure_count} failures."
             )
