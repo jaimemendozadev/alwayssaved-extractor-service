@@ -28,10 +28,7 @@ from services.aws.sqs import (
 from services.utils.mongodb.main import create_mongodb_instance
 from services.utils.types.main import ExtractorStatus, s3MediaUpload
 
-# ────────────────────────────────────────────────────────────── #
-#                           GLOBAL INIT                          #
-# ────────────────────────────────────────────────────────────── #
-
+# GLOBAL INIT
 load_dotenv()
 
 # Force device detection once in main context
@@ -49,9 +46,7 @@ s3_client = boto3.client("s3", region_name=AWS_REGION)
 # Global lock to serialize GPU access
 gpu_lock = asyncio.Lock()
 
-# ────────────────────────────────────────────────────────────── #
-#                       AUDIO TRANSCRIPTION                      #
-# ────────────────────────────────────────────────────────────── #
+# AUDIO TRANSCRIPTION
 
 
 def transcribe_audio(video_title: str) -> str | None:
@@ -66,16 +61,15 @@ def transcribe_audio(video_title: str) -> str | None:
         return None
 
 
-# ────────────────────────────────────────────────────────────── #
-#                       MEDIA PROCESSING                         #
-# ────────────────────────────────────────────────────────────── #
-
-
+# MEDIA PROCESSING
 async def process_media_upload(
-    upload: s3MediaUpload, user_id: str, mongo_client: AsyncMongoClient
+    upload: s3MediaUpload, mongo_client: AsyncMongoClient
 ) -> ExtractorStatus:
+
     mp3_file_name = None
     transcript_file_name = None
+
+    user_id = upload["user_id"]
     note_id = upload["note_id"]
     s3_key = upload["s3_key"]
 
@@ -85,13 +79,12 @@ async def process_media_upload(
         video_title = await asyncio.to_thread(download_and_convert_from_s3, s3_key)
         audio_elapsed_time = time.time() - audio_download_start_time
         print(
-            f"Elapsed time for {video_title} audio download: {audio_elapsed_time:.2f}s"
+            f"Elapsed time for user {user_id} note {note_id} video_title {video_title} audio download: {audio_elapsed_time:.2f}s"
         )
 
         if not video_title:
             raise ValueError("Video download failed.")
 
-        # mp3_file_name = f"{video_title}.mp3"
         mp3_file_name = os.path.abspath(f"{video_title}.mp3")
 
         # 2) Transcribe audio file.
@@ -105,11 +98,13 @@ async def process_media_upload(
             transcribe_elapsed_time = time.time() - transcribe_start_time
 
         print(
-            f"Elapsed time for {video_title} transcribing: {transcribe_elapsed_time:.2f}s"
+            f"Elapsed time for user {user_id} note {note_id} video_title {video_title} transcribing: {transcribe_elapsed_time:.2f}s"
         )
 
         if not transcript_file_name:
-            raise ValueError(f"Transcription for {video_title} failed.")
+            raise ValueError(
+                f"Transcription for user {user_id} note {note_id} video_title {video_title} failed."
+            )
 
         # 3) Upload the mp3 audio and transcript to s3 and create File document.
         audio_payload, transcript_payload = await asyncio.gather(
@@ -181,11 +176,7 @@ async def process_media_upload(
         }
 
 
-# ────────────────────────────────────────────────────────────── #
-#                            MAIN LOOP                           #
-# ────────────────────────────────────────────────────────────── #
-
-
+# MAIN LOOP
 async def main():
 
     mongo_client = create_mongodb_instance()
@@ -222,8 +213,7 @@ async def main():
             )
 
         tasks: List[Coroutine] = [
-            process_media_upload(upload, user_id, mongo_client)
-            for upload in media_uploads
+            process_media_upload(upload, mongo_client) for upload in media_uploads
         ]
 
         results = await asyncio.gather(*tasks)
