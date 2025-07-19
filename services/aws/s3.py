@@ -23,6 +23,7 @@ async def upload_s3_file_record_in_db(
     user_id = base_file_payload["user_id"]
     note_id = base_file_payload["note_id"]
     file_name = base_file_payload["file_name"]
+    file_path = base_file_payload["file_path"]
 
     base_s3_key = f"{user_id}/{note_id}"
 
@@ -35,7 +36,7 @@ async def upload_s3_file_record_in_db(
                 "AWS_BUCKET or BUCKET_BASE_URL environment variables are not set."
             )
 
-        file_abs_path = os.path.abspath(file_name)
+        file_abs_path = os.path.abspath(file_path)
 
         if not os.path.exists(file_abs_path):
             raise FileNotFoundError(f"File does not exist: {file_abs_path}")

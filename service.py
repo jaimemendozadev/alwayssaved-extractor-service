@@ -66,8 +66,8 @@ async def process_media_upload(
     upload: s3MediaUpload, mongo_client: AsyncMongoClient
 ) -> ExtractorStatus:
 
-    mp3_file_name = None
-    transcript_file_name = None
+    mp3_file_abs_path = None
+    transcript_file_abs_path = None
 
     user_id = upload["user_id"]
     note_id = upload["note_id"]
@@ -85,7 +85,7 @@ async def process_media_upload(
         if not video_title:
             raise ValueError("Video download failed.")
 
-        mp3_file_name = os.path.abspath(f"{video_title}.mp3")
+        mp3_file_abs_path = os.path.abspath(f"{video_title}.mp3")
 
         # 2) Transcribe audio file.
         async with gpu_lock:
@@ -93,7 +93,7 @@ async def process_media_upload(
             base_transcript_file_name = transcribe_audio(video_title)
 
             if base_transcript_file_name:
-                transcript_file_name = os.path.abspath(base_transcript_file_name)
+                transcript_file_abs_path = os.path.abspath(base_transcript_file_name)
 
             transcribe_elapsed_time = time.time() - transcribe_start_time
 
@@ -101,7 +101,7 @@ async def process_media_upload(
             f"Elapsed time for user {user_id} note {note_id} video_title {video_title} transcribing: {transcribe_elapsed_time:.2f}s"
         )
 
-        if not transcript_file_name:
+        if not transcript_file_abs_path:
             raise ValueError(
                 f"Transcription for user {user_id} note {note_id} video_title {video_title} failed."
             )
@@ -111,13 +111,19 @@ async def process_media_upload(
             upload_s3_file_record_in_db(
                 s3_client,
                 mongo_client,
-                {"file_name": mp3_file_name, "user_id": user_id, "note_id": note_id},
+                {
+                    "file_name": f"{video_title}.mp3",
+                    "file_path": mp3_file_abs_path,
+                    "user_id": user_id,
+                    "note_id": note_id,
+                },
             ),
             upload_s3_file_record_in_db(
                 s3_client,
                 mongo_client,
                 {
-                    "file_name": transcript_file_name,
+                    "file_name": f"{video_title}.txt",
+                    "file_path": transcript_file_abs_path,
                     "user_id": user_id,
                     "note_id": note_id,
                 },
@@ -125,11 +131,11 @@ async def process_media_upload(
         )
 
         # 4) Delete local files, reset local variables.
-        delete_local_file(mp3_file_name)
-        mp3_file_name = None
+        delete_local_file(mp3_file_abs_path)
+        mp3_file_abs_path = None
 
-        delete_local_file(transcript_file_name)
-        transcript_file_name = None
+        delete_local_file(transcript_file_abs_path)
+        transcript_file_abs_path = None
 
         if not all(
             [
@@ -161,14 +167,14 @@ async def process_media_upload(
         print(
             f"❌ Value Error in process_media_upload function for user {user_id} with note_id {note_id} and s3_key {s3_key}: {e}"
         )
-        if mp3_file_name:
-            delete_local_file(mp3_file_name)
+        if mp3_file_abs_path:
+            delete_local_file(mp3_file_abs_path)
 
-        if transcript_file_name:
-            delete_local_file(transcript_file_name)
+        if transcript_file_abs_path:
+            delete_local_file(transcript_file_abs_path)
 
-        mp3_file_name = None
-        transcript_file_name = None
+        mp3_file_abs_path = None
+        transcript_file_abs_path = None
 
         return {
             "s3_key": s3_key,

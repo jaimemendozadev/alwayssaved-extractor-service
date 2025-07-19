@@ -16,6 +16,7 @@ class BaseFilePayload(TypedDict):
     user_id: str
     note_id: str
     file_name: str
+    file_path: str
 
 
 class ExtractorStatus(TypedDict):
