@@ -141,13 +141,9 @@ def _upload_test_sqs_messages_to_extractor_queue(s3_urls: List[str]) -> None:
 def _download_video_from_url(
     video_url: str,
 ) -> None:
-    """
-    development MODE: Download full .mp4, convert to .mp3, return path to .mp3
-    production MODE: Download .mp3 directly using yt_dlp
-    """
 
     try:
-        print("📥 [DEV MODE] Downloading full MP4 from YouTube...")
+        print("📥 Downloading full MP4 from YouTube...")
 
         ydl_opts: Dict[str, Any] = {
             "format": "best[ext=mp4]/best",  # enforce a usable mp4 file

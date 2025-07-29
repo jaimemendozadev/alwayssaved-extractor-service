@@ -46,9 +46,8 @@ s3_client = boto3.client("s3", region_name=AWS_REGION)
 # Global lock to serialize GPU access
 gpu_lock = asyncio.Lock()
 
+
 # AUDIO TRANSCRIPTION
-
-
 def transcribe_audio(video_title: str) -> str | None:
     print(f"🔁 [subprocess] Starting transcription for: {video_title}")
     try:
@@ -249,7 +248,6 @@ Notes:
 - Media uploads are organized as "Files" and all Files belong to a "Note".
 - In v1: Users upload .mp4 Video file(s) on the Frontend where a single "Note" document is created.
   - A File document with the parent note_id is created for each video upload.
-
 - When SQS messages arrives in Extractor service, will transcribe and upload the transcript to s3 at /{fileOwner}/{noteID}/{fileID}/{fileName}.txt
 - Incoming SQS Message has the following shape:
 
@@ -274,11 +272,4 @@ Notes:
       user_id: string;
       transcript_s3_key: string;
   }
-
-
-TODO:
-  - Handle edge case where an SQS message with multiple file
-    transcriptions has a failure in the first attempt and the
-    second attempt succeeds, but there are dangling MongoDB
-    docs from the first attempt.
 """
