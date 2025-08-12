@@ -12,6 +12,7 @@ For more information about What is AlwaysSaved and its Key Features, refer to th
 ## Table of Contents (TOC)
 - [Starting the App](#starting-the-app)
 - [File Structure and Service Flow](#file-structure-and-service-flow)
+- [Environment and AWS Systems Manager Parameter Store Variables](#environment-and-aws-systems-manager-parameter-store-variables)
 - [AlwaysSaved System Design / App Flow](#alwayssaved-system-design--app-flow)
 
 ---
@@ -140,6 +141,59 @@ The next part of the ML/AI Pipeline then moves on to the `Embedding Queue` and `
 
 ---
 
+## Environment and AWS Systems Manager Parameter Store Variables
+
+You'll need to create a `.env` file at the root of this repo. There's only one variable that you have to prefill, which is the Region where all your AWS SQS Queues and s3 Bucket is located.
+
+```
+AWS_REGION=
+
+```
+
+
+For both development and production, there are a lot of variables that we couldn't store in the .env file, so we had to resort to using the <a href="https://aws.amazon.com/systems-manager/" target="_blank">AWS Systems Manager Parameter Store</a> ahead of time in order to get the app functioning.
+
+
+The following variable keys have their values stored in the Parameter store as follows:
+
+```
+/alwayssaved/AWS_BUCKET
+
+/alwayssaved/AWS_BUCKET_BASE_URL
+
+
+/alwayssaved/EXTRACTOR_PUSH_QUEUE_URL
+
+/alwayssaved/EMBEDDING_PUSH_QUEUE_URL
+
+
+/alwayssaved/MONGO_DB_USER
+
+/alwayssaved/MONGO_DB_PASSWORD
+
+/alwayssaved/MONGO_DB_BASE_URI
+
+/alwayssaved/MONGO_DB_NAME
+
+/alwayssaved/MONGO_DB_CLUSTER_NAME
+
+```
+
+
+If you already setup your MongoDB Cluster and s3 Bucket by setting up the [AlwaysSaved Frontend](#https://github.com/jaimemendozadev/alwayssaved-fe-app), adding those values in the AWS Parameter Store should be easy.
+
+For clarification, your `AWS_BUCKET_BASE_URL` really means the URL that points to your Bucket in AWS like so:
+
+```
+https://<AWS_BUCKET_NAME>.s3.amazonaws.com
+
+```
+
+
+
+[Back to TOC](#table-of-contents-toc)
+
+---
 
 
 ## AlwaysSaved System Design / App Flow
