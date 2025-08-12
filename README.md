@@ -116,10 +116,10 @@ When the `File` upload(s) to s3 finish, the Frontend sends an SQS Message Payloa
 ```
 
 
-Then for each SQS Message, for each `media_upload` in the Message Payload, the `Extractor Serviced` will:
+Then for each SQS Message, for each `media_upload` in the Message Payload, the `Extractor Service` will:
   - Download the .mp4 media `File` from s3;
   - Extract the .mp3 audio file from the video;
-  - Use the Whisper Model to transcribe the audio and create a .txt file of the transcript;
+  - Use the [Whisper Model](https://openai.com/index/whisper/) to transcribe the audio and create a .txt file of the transcript;
   - Upload the .txt transcript to s3; and
   - Send an outgoing SQS Message to the `Embedding Queue` [Step 4 of System Design Diagram](#alwayssaved-system-design--app-flow) with the following shape:
 
@@ -132,6 +132,8 @@ Then for each SQS Message, for each `media_upload` in the Message Payload, the `
       transcript_s3_key: string;
   }
 ```
+
+The next part of the ML/AI Pipeline then moves on to the `Embedding Queue` and `Embedding Service` (see [Steps 4-5 of System Design Diagram](#alwayssaved-system-design--app-flow)).
 
 
 [Back to TOC](#table-of-contents-toc)
