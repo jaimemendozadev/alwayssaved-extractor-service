@@ -12,9 +12,9 @@ For more information about What is AlwaysSaved and its Key Features, refer to th
 ## Table of Contents (TOC)
 
 - [3rd Party Services Needed](#3rd-party-services-needed)
+- [Environment and AWS Systems Manager Parameter Store Variables](#environment-and-aws-systems-manager-parameter-store-variables)
 - [Starting the App](#starting-the-app)
 - [File Structure and Service Flow](#file-structure-and-service-flow)
-- [Environment and AWS Systems Manager Parameter Store Variables](#environment-and-aws-systems-manager-parameter-store-variables)
 - [AlwaysSaved System Design / App Flow](#alwayssaved-system-design--app-flow)
 
 
@@ -34,9 +34,75 @@ As a friendly reminder from the [AlwaysSaved Frontend](#https://github.com/jaime
 
  - Create a second SQS queue we call the `Embedding Queue` that the `Extractor Service` uses to send payloads to the `Embedding Service` to continue the next part of the ML/AI Pipeline (see [Steps 4-5 of System Design Diagram](#alwayssaved-system-design--app-flow)).
 
+ <br />
+
+ Your newly created `Embedding Queue` URL will be saved in the AWS Parmeter Store ([see next section](#environment-and-aws-systems-manager-parameter-store-variables)).
+
 <br />
 
 [Back to TOC](#table-of-contents-toc)
+
+---
+
+## Environment and AWS Systems Manager Parameter Store Variables
+
+You'll need to create a `.env` file at the root of this repo. There's only one variable that you have to prefill, which is the Region where all your AWS s3 Bucket and SQS Queues are located.
+
+```
+AWS_REGION=
+
+```
+
+
+For both development and production, there are a lot of variables that we couldn't store in the .env file, so we had to resort to using the <a href="https://aws.amazon.com/systems-manager/" target="_blank">AWS Systems Manager Parameter Store</a> ahead of time in order to get the app functioning.
+
+
+The following variable keys have their values stored in the Parameter store as follows:
+
+```
+/alwayssaved/AWS_BUCKET
+
+/alwayssaved/AWS_BUCKET_BASE_URL
+
+
+/alwayssaved/EXTRACTOR_PUSH_QUEUE_URL
+
+/alwayssaved/EMBEDDING_PUSH_QUEUE_URL
+
+
+/alwayssaved/MONGO_DB_USER
+
+/alwayssaved/MONGO_DB_PASSWORD
+
+/alwayssaved/MONGO_DB_BASE_URI
+
+/alwayssaved/MONGO_DB_NAME
+
+/alwayssaved/MONGO_DB_CLUSTER_NAME
+
+```
+
+
+If you already setup your MongoDB Cluster and s3 Bucket by setting up the [AlwaysSaved Frontend](#https://github.com/jaimemendozadev/alwayssaved-fe-app), adding those values in the AWS Parameter Store should be easy.
+
+
+Make sure that the `Extractor Service` SQS URL gets saved in the paramter store under `/alwayssaved/EXTRACTOR_PUSH_QUEUE_URL` and the newly created `Embedding Queue` URL gets saved under `/alwayssaved/EMBEDDING_PUSH_QUEUE_URL`.
+
+
+For clarification, your `AWS_BUCKET_BASE_URL` really means the URL that points to your Bucket in AWS like so:
+
+```
+https://<AWS_BUCKET_NAME>.s3.amazonaws.com
+
+```
+
+
+
+
+<br />
+
+[Back to TOC](#table-of-contents-toc)
+
 
 
 ---
@@ -162,67 +228,6 @@ The next part of the ML/AI Pipeline then moves on to the `Embedding Queue` and `
 
 <br />
 
-
-[Back to TOC](#table-of-contents-toc)
-
----
-
-## Environment and AWS Systems Manager Parameter Store Variables
-
-You'll need to create a `.env` file at the root of this repo. There's only one variable that you have to prefill, which is the Region where all your AWS s3 Bucket and SQS Queues are located.
-
-```
-AWS_REGION=
-
-```
-
-
-For both development and production, there are a lot of variables that we couldn't store in the .env file, so we had to resort to using the <a href="https://aws.amazon.com/systems-manager/" target="_blank">AWS Systems Manager Parameter Store</a> ahead of time in order to get the app functioning.
-
-
-The following variable keys have their values stored in the Parameter store as follows:
-
-```
-/alwayssaved/AWS_BUCKET
-
-/alwayssaved/AWS_BUCKET_BASE_URL
-
-
-/alwayssaved/EXTRACTOR_PUSH_QUEUE_URL
-
-/alwayssaved/EMBEDDING_PUSH_QUEUE_URL
-
-
-/alwayssaved/MONGO_DB_USER
-
-/alwayssaved/MONGO_DB_PASSWORD
-
-/alwayssaved/MONGO_DB_BASE_URI
-
-/alwayssaved/MONGO_DB_NAME
-
-/alwayssaved/MONGO_DB_CLUSTER_NAME
-
-```
-
-
-If you already setup your MongoDB Cluster and s3 Bucket by setting up the [AlwaysSaved Frontend](#https://github.com/jaimemendozadev/alwayssaved-fe-app), adding those values in the AWS Parameter Store should be easy.
-
-
-Make sure that the `Extractor Service` SQS URL gets saved in the paramter store under `/alwayssaved/EXTRACTOR_PUSH_QUEUE_URL` and the newly created `Embedding Queue` URL gets saved under `/alwayssaved/EMBEDDING_PUSH_QUEUE_URL`.
-
-
-For clarification, your `AWS_BUCKET_BASE_URL` really means the URL that points to your Bucket in AWS like so:
-
-```
-https://<AWS_BUCKET_NAME>.s3.amazonaws.com
-
-```
-
-
-
-
-<br />
 
 [Back to TOC](#table-of-contents-toc)
 
