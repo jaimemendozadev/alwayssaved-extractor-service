@@ -22,3 +22,8 @@ class BaseFilePayload(TypedDict):
 class ExtractorStatus(TypedDict):
     s3_key: str
     status: str
+
+
+class s3DownloadConvertResult(TypedDict):
+    file_name: str
+    file_extension: str

@@ -8,6 +8,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 from services.aws.ssm import get_secret
+from services.utils.types.main import s3DownloadConvertResult
 
 s3_client = boto3.client("s3")
 
@@ -77,7 +78,7 @@ def download_with_retry(
     raise Exception(f"Failed to download {s3_key} from S3 after {retries} attempts.")
 
 
-def download_and_convert_from_s3(s3_key: str) -> str | None:
+def download_and_convert_from_s3(s3_key: str) -> s3DownloadConvertResult | None:
     """
     Downloads an .mp4 file from S3 using the s3_key and converts it to .mp3.
     Returns: sanitized video title (base filename without extension)
@@ -98,12 +99,15 @@ def download_and_convert_from_s3(s3_key: str) -> str | None:
         print(f"🎞️ Download complete: {base_file_local_path}")
 
         if file_extension == ".mp3":
-            return sanitize_filename(base_title)
+            return {
+                "file_name": sanitize_filename(base_title),
+                "file_extension": file_extension,
+            }
 
         video_title = convert_mp4_to_mp3(base_file_local_path, base_title)
         print(f"✅ MP3 created: {video_title}.mp3")
 
-        return video_title
+        return {"file_name": video_title, "file_extension": file_extension}
 
     except Exception as e:
         print(f"❌ Error in download_and_convert_from_s3: {e}")
