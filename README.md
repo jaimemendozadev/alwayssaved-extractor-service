@@ -184,7 +184,7 @@ So basically the AlwaysSaved ML/AI Pipeline starts here in the `Extractor Servic
 
 But first, a little explanation on the [Data Entities of AlwaysSaved](https://github.com/jaimemendozadev/alwayssaved-fe-app/tree/main/utils/mongodb/schemamodels) and how incoming requests to the `Extractor Service` arrive from the Frontend.
 
-On the Frontend for v1, Users can upload a single or multiple `.mp4` Video `File`(s) to s3. When a single or multiple `Files` are uploaded to s3, the Frontend creates `File` MongoDB documents for each `File` upload.
+On the Frontend for v1, Users can upload a single or multiple `.mp4` Video or `.mp3` Audio `File`(s) to s3. When a single or multiple `Files` are uploaded to s3, the Frontend creates `File` MongoDB documents for each `File` upload.
 
 Those newly created media `File` upload(s) are organized in a newly created MongoDB `"Note"` document.
 
@@ -208,8 +208,8 @@ When the `File` upload(s) to s3 finish, the Frontend sends an SQS Message Payloa
 <br />
 
 Then for each SQS Message, for each `media_upload` in the Message Payload, the `Extractor Service` will:
-  - Download the `.mp4` media `File` from s3;
-  - Extract the `.mp3` audio file from the video;
+  - Download the media `File` from s3;
+    - If the media download is an `.mp4` file, extract the `.mp3` audio file from the video;
   - Use the [Whisper Model](https://openai.com/index/whisper/) to transcribe the audio and create a `.txt` file of the transcript;
   - Upload the `.txt` transcript to s3; and
   - Send an outgoing SQS Message to the `Embedding Queue` [Step 4 of System Design Diagram](#alwayssaved-system-design--app-flow) with the following shape:
