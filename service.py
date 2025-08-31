@@ -114,7 +114,7 @@ async def process_media_upload(
                 f"Transcription for user {user_id} note {note_id} media_title {file_name} failed."
             )
 
-        # 3) Upload the mp3 audio and transcript to s3 and create File document. And delete local files.
+        # 3) Upload the mp3 audio and transcript to s3 and create File document.
         if file_extension == ".mp3":
             transcript_payload = await upload_s3_file_record_in_db(
                 s3_client,
@@ -126,9 +126,6 @@ async def process_media_upload(
                     "note_id": note_id,
                 },
             )
-
-            delete_local_file(transcript_file_abs_path)
-            transcript_file_abs_path = None
 
             if not all(
                 [transcript_payload.get("s3_key"), transcript_payload.get("file_id")]
@@ -158,12 +155,6 @@ async def process_media_upload(
                 ),
             )
 
-            delete_local_file(mp3_file_abs_path)
-            mp3_file_abs_path = None
-
-            delete_local_file(transcript_file_abs_path)
-            transcript_file_abs_path = None
-
             if not all(
                 [
                     audio_payload.get("s3_key"),
@@ -174,7 +165,14 @@ async def process_media_upload(
             ):
                 raise ValueError("Failed to upload audio or transcript to S3.")
 
-        # 4) Send SQS Message to embedding queue & delete old processed SQS message.
+        # 4) Delete local files from Extractor Service.
+        delete_local_file(mp3_file_abs_path)
+        mp3_file_abs_path = None
+
+        delete_local_file(transcript_file_abs_path)
+        transcript_file_abs_path = None
+
+        # 5) Send SQS Message to embedding queue & delete old processed SQS message.
         await asyncio.to_thread(
             send_embedding_sqs_message,
             {
