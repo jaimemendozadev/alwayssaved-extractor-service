@@ -75,21 +75,30 @@ async def process_media_upload(
     try:
         # 1) Download the audio file.
         audio_download_start_time = time.time()
-        video_title = await asyncio.to_thread(download_and_convert_from_s3, s3_key)
-        audio_elapsed_time = time.time() - audio_download_start_time
-        print(
-            f"Elapsed time for user {user_id} note {note_id} video_title {video_title} audio download: {audio_elapsed_time:.2f}s"
+
+        # video_title = await asyncio.to_thread(download_and_convert_from_s3, s3_key)
+        download_convert_info = await asyncio.to_thread(
+            download_and_convert_from_s3, s3_key
         )
 
-        if not video_title:
-            raise ValueError("Video download failed.")
+        if not download_convert_info:
+            raise ValueError("Media download failed.")
 
-        mp3_file_abs_path = os.path.abspath(f"{video_title}.mp3")
+        file_name = download_convert_info.get("file_name", "")
+        file_extension = download_convert_info.get("file_extension", "")
+
+        audio_elapsed_time = time.time() - audio_download_start_time
+
+        print(
+            f"Elapsed time for user {user_id} note {note_id} media_title {file_name} audio download: {audio_elapsed_time:.2f}s"
+        )
+
+        mp3_file_abs_path = os.path.abspath(f"{file_name}.mp3")
 
         # 2) Transcribe audio file.
         async with gpu_lock:
             transcribe_start_time = time.time()
-            base_transcript_file_name = transcribe_audio(video_title)
+            base_transcript_file_name = transcribe_audio(file_name)
 
             if base_transcript_file_name:
                 transcript_file_abs_path = os.path.abspath(base_transcript_file_name)
@@ -97,56 +106,75 @@ async def process_media_upload(
             transcribe_elapsed_time = time.time() - transcribe_start_time
 
         print(
-            f"Elapsed time for user {user_id} note {note_id} video_title {video_title} transcribing: {transcribe_elapsed_time:.2f}s"
+            f"Elapsed time for user {user_id} note {note_id} media_title {file_name} transcribing: {transcribe_elapsed_time:.2f}s"
         )
 
         if not transcript_file_abs_path:
             raise ValueError(
-                f"Transcription for user {user_id} note {note_id} video_title {video_title} failed."
+                f"Transcription for user {user_id} note {note_id} media_title {file_name} failed."
             )
 
-        # 3) Upload the mp3 audio and transcript to s3 and create File document.
-        audio_payload, transcript_payload = await asyncio.gather(
-            upload_s3_file_record_in_db(
+        # 3) Upload the mp3 audio and transcript to s3 and create File document. And delete local files.
+        if file_extension == ".mp3":
+            transcript_payload = await upload_s3_file_record_in_db(
                 s3_client,
                 mongo_client,
                 {
-                    "file_name": f"{video_title}.mp3",
-                    "file_path": mp3_file_abs_path,
-                    "user_id": user_id,
-                    "note_id": note_id,
-                },
-            ),
-            upload_s3_file_record_in_db(
-                s3_client,
-                mongo_client,
-                {
-                    "file_name": f"{video_title}.txt",
+                    "file_name": f"{file_name}.txt",
                     "file_path": transcript_file_abs_path,
                     "user_id": user_id,
                     "note_id": note_id,
                 },
-            ),
-        )
+            )
 
-        # 4) Delete local files, reset local variables.
-        delete_local_file(mp3_file_abs_path)
-        mp3_file_abs_path = None
+            delete_local_file(transcript_file_abs_path)
+            transcript_file_abs_path = None
 
-        delete_local_file(transcript_file_abs_path)
-        transcript_file_abs_path = None
+            if not all(
+                [transcript_payload.get("s3_key"), transcript_payload.get("file_id")]
+            ):
+                raise ValueError("Failed to upload audio or transcript to S3.")
+        else:
+            audio_payload, transcript_payload = await asyncio.gather(
+                upload_s3_file_record_in_db(
+                    s3_client,
+                    mongo_client,
+                    {
+                        "file_name": f"{file_name}.mp3",
+                        "file_path": mp3_file_abs_path,
+                        "user_id": user_id,
+                        "note_id": note_id,
+                    },
+                ),
+                upload_s3_file_record_in_db(
+                    s3_client,
+                    mongo_client,
+                    {
+                        "file_name": f"{file_name}.txt",
+                        "file_path": transcript_file_abs_path,
+                        "user_id": user_id,
+                        "note_id": note_id,
+                    },
+                ),
+            )
 
-        if not all(
-            [
-                audio_payload.get("s3_key"),
-                audio_payload.get("file_id"),
-                transcript_payload.get("s3_key"),
-                transcript_payload.get("file_id"),
-            ]
-        ):
-            raise ValueError("Failed to upload audio or transcript to S3.")
+            delete_local_file(mp3_file_abs_path)
+            mp3_file_abs_path = None
 
-        # 5) Send SQS Message to embedding queue & delete old processed SQS message.
+            delete_local_file(transcript_file_abs_path)
+            transcript_file_abs_path = None
+
+            if not all(
+                [
+                    audio_payload.get("s3_key"),
+                    audio_payload.get("file_id"),
+                    transcript_payload.get("s3_key"),
+                    transcript_payload.get("file_id"),
+                ]
+            ):
+                raise ValueError("Failed to upload audio or transcript to S3.")
+
+        # 4) Send SQS Message to embedding queue & delete old processed SQS message.
         await asyncio.to_thread(
             send_embedding_sqs_message,
             {
