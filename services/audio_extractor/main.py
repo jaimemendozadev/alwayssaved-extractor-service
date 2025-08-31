@@ -89,15 +89,18 @@ def download_and_convert_from_s3(s3_key: str) -> str | None:
             raise ValueError("AWS_BUCKET not set in SSM.")
 
         base_filename = os.path.basename(s3_key)  # e.g., video1.mp4
-        base_title, _ = os.path.splitext(base_filename)
-        mp4_local_path = base_filename
+        base_title, file_extension = os.path.splitext(base_filename)
+        base_file_local_path = base_filename
 
         print(f"📥 Downloading from S3: s3://{bucket_name}/{s3_key}")
-        download_with_retry(bucket_name, s3_key, mp4_local_path)
+        download_with_retry(bucket_name, s3_key, base_file_local_path)
 
-        print(f"🎞️ Download complete: {mp4_local_path}")
+        print(f"🎞️ Download complete: {base_file_local_path}")
 
-        video_title = convert_mp4_to_mp3(mp4_local_path, base_title)
+        if file_extension == ".mp3":
+            return sanitize_filename(base_title)
+
+        video_title = convert_mp4_to_mp3(base_file_local_path, base_title)
         print(f"✅ MP3 created: {video_title}.mp3")
 
         return video_title
