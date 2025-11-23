@@ -80,7 +80,8 @@ def download_with_retry(
 
 def download_and_convert_from_s3(s3_key: str) -> s3DownloadConvertResult | None:
     """
-    Downloads an .mp4 file from S3 using the s3_key and converts it to .mp3.
+    Downloads .mp3 or .mp4 files from S3 using the s3_key.
+    Converts .mp4 files to .mp3 files.
     Returns: sanitized video title (base filename without extension)
     """
 

@@ -76,7 +76,6 @@ async def process_media_upload(
         # 1) Download the audio file.
         audio_download_start_time = time.time()
 
-        # video_title = await asyncio.to_thread(download_and_convert_from_s3, s3_key)
         download_convert_info = await asyncio.to_thread(
             download_and_convert_from_s3, s3_key
         )
