@@ -57,7 +57,7 @@ def transcribe_audio(file_name: str) -> str | None:
         return transcribe_audio_file(file_name, model)
     except Exception as e:
         print(f"❌ [subprocess] Failed in transcribe_audio: {e}")
-        return None
+    return None
 
 
 # MEDIA PROCESSING
