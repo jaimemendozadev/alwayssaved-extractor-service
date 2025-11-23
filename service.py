@@ -26,7 +26,7 @@ from services.aws.sqs import (
     send_embedding_sqs_message,
 )
 from services.utils.mongodb.main import create_mongodb_instance
-from services.utils.types.main import ExtractorStatus, s3MediaUpload
+from services.utils.types.main import ExtractorStatus, FilePayload, s3MediaUpload
 
 # GLOBAL INIT
 load_dotenv()
@@ -113,47 +113,33 @@ async def process_media_upload(
                 f"Transcription for user {user_id} note {note_id} media_title {file_name} failed."
             )
 
+        audio_payload: FilePayload = {"s3_key": "", "file_id": ""}
+
         # 3) Upload the mp3 audio and transcript to s3 and create File document.
-        if file_extension == ".mp3":
-            transcript_payload = await upload_s3_file_record_in_db(
+        if file_extension == ".mp4":
+            audio_payload = await upload_s3_file_record_in_db(
                 s3_client,
                 mongo_client,
                 {
-                    "file_name": f"{file_name}.txt",
-                    "file_path": transcript_abs_path,
+                    "file_name": f"{file_name}.mp3",
+                    "file_path": mp3_abs_path,
                     "user_id": user_id,
                     "note_id": note_id,
                 },
             )
 
-            if not all(
-                [transcript_payload.get("s3_key"), transcript_payload.get("file_id")]
-            ):
-                raise ValueError("Failed to upload audio or transcript to S3.")
-        else:
-            audio_payload, transcript_payload = await asyncio.gather(
-                upload_s3_file_record_in_db(
-                    s3_client,
-                    mongo_client,
-                    {
-                        "file_name": f"{file_name}.mp3",
-                        "file_path": mp3_abs_path,
-                        "user_id": user_id,
-                        "note_id": note_id,
-                    },
-                ),
-                upload_s3_file_record_in_db(
-                    s3_client,
-                    mongo_client,
-                    {
-                        "file_name": f"{file_name}.txt",
-                        "file_path": transcript_abs_path,
-                        "user_id": user_id,
-                        "note_id": note_id,
-                    },
-                ),
-            )
+        transcript_payload = await upload_s3_file_record_in_db(
+            s3_client,
+            mongo_client,
+            {
+                "file_name": f"{file_name}.txt",
+                "file_path": transcript_abs_path,
+                "user_id": user_id,
+                "note_id": note_id,
+            },
+        )
 
+        if file_extension == "mp4":
             if not all(
                 [
                     audio_payload.get("s3_key"),
@@ -163,6 +149,11 @@ async def process_media_upload(
                 ]
             ):
                 raise ValueError("Failed to upload audio or transcript to S3.")
+        else:
+            if not all(
+                [transcript_payload.get("s3_key"), transcript_payload.get("file_id")]
+            ):
+                raise ValueError("Failed to upload audio to S3.")
 
         # 4) Delete local files from Extractor Service.
         delete_local_file(mp3_abs_path)

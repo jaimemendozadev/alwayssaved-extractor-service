@@ -90,8 +90,6 @@ def download_and_convert_from_s3(s3_key: str) -> s3DownloadConvertResult | None:
 
         base_filename = os.path.basename(s3_key)  # e.g., video1.mp4
 
-        print(f"base_filename: {base_filename}")  # TODO: Delete
-
         base_title, file_extension = os.path.splitext(base_filename)
 
         print(f"📥 Downloading from S3: s3://{bucket_name}/{s3_key}")
