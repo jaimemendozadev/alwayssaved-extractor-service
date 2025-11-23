@@ -5,7 +5,6 @@ import subprocess
 import time
 
 import boto3
-from botocore.exceptions import ClientError
 
 from services.aws.ssm import get_secret
 from services.utils.types.main import s3DownloadConvertResult
@@ -60,7 +59,7 @@ def convert_mp4_to_mp3(mp4_path: str, video_title: str) -> str:
 
 def download_with_retry(
     bucket: str, s3_key: str, local_path: str, retries: int = 5, delay: int = 2
-):
+) -> None:
     """Try downloading from S3 with retries and exponential backoff."""
     for attempt in range(retries):
         try:
@@ -68,13 +67,12 @@ def download_with_retry(
                 s3_client.download_fileobj(bucket, s3_key, f)
             if os.path.exists(local_path):
                 return
-        except ClientError as e:
-            if e.response["Error"]["Code"] in ["404", "403", "NoSuchKey"]:
-                wait = delay * (2**attempt)
-                logging.warning(f"S3 not ready yet. Retrying in {wait}s...")
-                time.sleep(wait)
-            else:
-                raise
+        except Exception:
+            logging.error("An exception occurred in download_with_retry", exc_info=True)
+            wait = delay * (2**attempt)
+            logging.warning(f"S3 not ready yet. Retrying in {wait}s...")
+            time.sleep(wait)
+
     raise Exception(f"Failed to download {s3_key} from S3 after {retries} attempts.")
 
 
@@ -95,6 +93,8 @@ def download_and_convert_from_s3(s3_key: str) -> s3DownloadConvertResult | None:
         base_file_local_path = base_filename
 
         print(f"📥 Downloading from S3: s3://{bucket_name}/{s3_key}")
+
+        # File is successfully downloaded or an Exception is raised
         download_with_retry(bucket_name, s3_key, base_file_local_path)
 
         print(f"🎞️ Download complete: {base_file_local_path}")
