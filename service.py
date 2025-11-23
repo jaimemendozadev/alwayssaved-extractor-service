@@ -48,13 +48,13 @@ gpu_lock = asyncio.Lock()
 
 
 # AUDIO TRANSCRIPTION
-def transcribe_audio(video_title: str) -> str | None:
-    print(f"🔁 [subprocess] Starting transcription for: {video_title}")
+def transcribe_audio(file_name: str) -> str | None:
+    print(f"🔁 [subprocess] Starting transcription for: {file_name}")
     try:
         print(f"💻 [subprocess] Using device: {DEVICE}")
         model = whisper.load_model(WHISPER_MODEL_NAME, device=str(DEVICE))
         print(f"📦 Model loaded on: {next(model.parameters()).device}")
-        return transcribe_audio_file(video_title, model)
+        return transcribe_audio_file(file_name, model)
     except Exception as e:
         print(f"❌ [subprocess] Failed in transcribe_audio: {e}")
         return None
