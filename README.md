@@ -184,7 +184,7 @@ So basically the AlwaysSaved ML/AI Pipeline starts here in the `Extractor Servic
 
 But first, a little explanation on the [Data Entities of AlwaysSaved](https://github.com/jaimemendozadev/alwayssaved-fe-app/tree/main/utils/mongodb/schemamodels) and how incoming requests to the `Extractor Service` arrive from the Frontend.
 
-On the Frontend for v1, Users can upload a single or multiple `.mp4` Video or `.mp3` Audio `File`(s) to s3. When a single or multiple `Files` are uploaded to s3, the Frontend creates `File` MongoDB documents for each `File` upload.
+On the Frontend for v1, Users can upload a single or multiple `.mp4` Video or `.mp3` Audio `File`(s) to s3. When the`File`(s) are uploaded to s3, the Frontend creates `File` MongoDB documents for each `File` upload.
 
 Those newly created media `File` upload(s) are organized in a newly created MongoDB `"Note"` document.
 

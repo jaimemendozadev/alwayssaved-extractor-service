@@ -265,37 +265,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-
-# pylint: disable=W0105
-"""
-Notes:
-
-- Media uploads are organized as "Files" and all Files belong to a "Note".
-- In v1: Users upload .mp4 Video file(s) on the Frontend where a single "Note" document is created.
-  - A File document with the parent note_id is created for each video upload.
-- When SQS messages arrives in Extractor service, will transcribe and upload the transcript to s3 at /{fileOwner}/{noteID}/{fileID}/{fileName}.txt
-- Incoming SQS Message has the following shape:
-
-  [
-    {
-      user_id: string;
-      media_uploads: [
-        {
-         note_id: ObjectID;
-         user_id: ObjectID;
-         s3_key: string;
-        }
-      ]
-    }
-  ]
-
-
-- Outgoing SQS Message has the following shape:
-  {
-      note_id: string;
-      file_id: string;
-      user_id: string;
-      transcript_s3_key: string;
-  }
-"""
