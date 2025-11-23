@@ -73,7 +73,7 @@ async def process_media_upload(
     s3_key = upload["s3_key"]
 
     try:
-        # 1) Download the audio file.
+        # 1) Download the s3 file.
         audio_download_start_time = time.time()
 
         download_convert_info = await asyncio.to_thread(
