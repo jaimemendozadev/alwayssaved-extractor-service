@@ -65,8 +65,8 @@ async def process_media_upload(
     upload: s3MediaUpload, mongo_client: AsyncMongoClient
 ) -> ExtractorStatus:
 
-    mp3_file_abs_path = None
-    transcript_file_abs_path = None
+    mp3_abs_path = None
+    transcript_abs_path = None
 
     user_id = upload["user_id"]
     note_id = upload["note_id"]
@@ -92,7 +92,7 @@ async def process_media_upload(
             f"Elapsed time for user {user_id} note {note_id} media_title {file_name} audio download: {audio_elapsed_time:.2f}s"
         )
 
-        mp3_file_abs_path = os.path.abspath(f"{file_name}.mp3")
+        mp3_abs_path = os.path.abspath(f"{file_name}.mp3")
 
         # 2) Transcribe audio file.
         async with gpu_lock:
@@ -100,7 +100,7 @@ async def process_media_upload(
             base_transcript_file_name = transcribe_audio(file_name)
 
             if base_transcript_file_name:
-                transcript_file_abs_path = os.path.abspath(base_transcript_file_name)
+                transcript_abs_path = os.path.abspath(base_transcript_file_name)
 
             transcribe_elapsed_time = time.time() - transcribe_start_time
 
@@ -108,7 +108,7 @@ async def process_media_upload(
             f"Elapsed time for user {user_id} note {note_id} media_title {file_name} transcribing: {transcribe_elapsed_time:.2f}s"
         )
 
-        if not transcript_file_abs_path:
+        if not transcript_abs_path:
             raise ValueError(
                 f"Transcription for user {user_id} note {note_id} media_title {file_name} failed."
             )
@@ -120,7 +120,7 @@ async def process_media_upload(
                 mongo_client,
                 {
                     "file_name": f"{file_name}.txt",
-                    "file_path": transcript_file_abs_path,
+                    "file_path": transcript_abs_path,
                     "user_id": user_id,
                     "note_id": note_id,
                 },
@@ -137,7 +137,7 @@ async def process_media_upload(
                     mongo_client,
                     {
                         "file_name": f"{file_name}.mp3",
-                        "file_path": mp3_file_abs_path,
+                        "file_path": mp3_abs_path,
                         "user_id": user_id,
                         "note_id": note_id,
                     },
@@ -147,7 +147,7 @@ async def process_media_upload(
                     mongo_client,
                     {
                         "file_name": f"{file_name}.txt",
-                        "file_path": transcript_file_abs_path,
+                        "file_path": transcript_abs_path,
                         "user_id": user_id,
                         "note_id": note_id,
                     },
@@ -165,11 +165,11 @@ async def process_media_upload(
                 raise ValueError("Failed to upload audio or transcript to S3.")
 
         # 4) Delete local files from Extractor Service.
-        delete_local_file(mp3_file_abs_path)
-        mp3_file_abs_path = None
+        delete_local_file(mp3_abs_path)
+        mp3_abs_path = None
 
-        delete_local_file(transcript_file_abs_path)
-        transcript_file_abs_path = None
+        delete_local_file(transcript_abs_path)
+        transcript_abs_path = None
 
         # 5) Send SQS Message to embedding queue & delete old processed SQS message.
         await asyncio.to_thread(
@@ -191,14 +191,14 @@ async def process_media_upload(
         print(
             f"❌ Value Error in process_media_upload function for user {user_id} with note_id {note_id} and s3_key {s3_key}: {e}"
         )
-        if mp3_file_abs_path:
-            delete_local_file(mp3_file_abs_path)
+        if mp3_abs_path:
+            delete_local_file(mp3_abs_path)
 
-        if transcript_file_abs_path:
-            delete_local_file(transcript_file_abs_path)
+        if transcript_abs_path:
+            delete_local_file(transcript_abs_path)
 
-        mp3_file_abs_path = None
-        transcript_file_abs_path = None
+        mp3_abs_path = None
+        transcript_abs_path = None
 
         return {
             "s3_key": s3_key,
