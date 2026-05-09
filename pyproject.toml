@@ -4,4 +4,32 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "dotenv",
+    "blobfile",
+    "aiohttp",
+    "boto3",
+    "python-dotenv",
+    "transformers",
+    "openai-whisper",
+    "sentencepiece",
+    "protobuf",
+    "ffmpeg-python",
+    "yt-dlp",
+    "tqdm",
+    "asyncio",
+    "motor",
+    "pymongo",
+]
+[dependency-groups]
+dev = [
+    "pre-commit",
+    "isort",
+    "black",
+    "flake8",
+    "mypy",
+    "ruff",
+    "mypy-boto3-s3",
+    "mypy-boto3-sqs",
+    "mypy-boto3-ssm",
+]
