@@ -8,28 +8,30 @@ ENV PYTHONUNBUFFERED=1
 ENV TRANSFORMERS_CACHE=/app/.cache
 ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
 
-# Install system dependencies
+# Install system dependencies + uv
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3-pip \
-    python3-venv \
     ffmpeg \
     git \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
 # Set working directory
 WORKDIR /app
 
-# Copy requirements and install Python dependencies (without torch)
-COPY requirements.txt .
-RUN python3 -m pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# Copy project files
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies
+RUN uv sync --frozen --no-dev
 
 # Install GPU-enabled PyTorch separately
-RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+RUN uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 # Copy application code
 COPY . .
 
 # Default command
-CMD ["python3", "service.py"]
+CMD ["uv", "run", "service.py"]
