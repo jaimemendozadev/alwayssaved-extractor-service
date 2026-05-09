@@ -24,9 +24,6 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pre-commit",
-    "isort",
-    "black",
-    "flake8",
     "mypy",
     "ruff",
     "mypy-boto3-s3",
