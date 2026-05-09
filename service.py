@@ -32,6 +32,7 @@ from services.utils.types.main import ExtractorStatus, FilePayload, s3MediaUploa
 load_dotenv()
 
 # Force device detection once in main context
+# 5-9-26: May need to fix for access to Macbook Pro GPU access
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"✅ [BOOT] Using device: {DEVICE}")
 
@@ -203,7 +204,6 @@ async def main():
     mongo_client = create_mongodb_instance()
 
     while True:
-
         if mongo_client is None:
             print(
                 "❌ App fails preliminary first check with mongo_client unavailable. Can't run Extractor service."

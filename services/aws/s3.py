@@ -62,10 +62,12 @@ async def upload_s3_file_record_in_db(
 
         s3_client.upload_file(file_abs_path, bucket_name, target_s3_key)
 
-        await mongo_client.get_database("alwayssaved").get_collection(
-            "files"
-        ).find_one_and_update(
-            {"_id": ObjectId(new_file_id)}, {"$set": {"s3_key": target_s3_key}}
+        await (
+            mongo_client.get_database("alwayssaved")
+            .get_collection("files")
+            .find_one_and_update(
+                {"_id": ObjectId(new_file_id)}, {"$set": {"s3_key": target_s3_key}}
+            )
         )
 
         return {"s3_key": target_s3_key, "file_id": new_file_id}
