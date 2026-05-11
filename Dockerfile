@@ -18,6 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
+ENV UV_PYTHON=python3.11
+
 # Set working directory
 WORKDIR /app
 
@@ -25,10 +27,10 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 
 # Install dependencies
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev --python 3.11
 
 # Install GPU-enabled PyTorch separately
-RUN uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+RUN uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 --python 3.11
 
 # Copy application code
 COPY . .
