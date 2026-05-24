@@ -1,4 +1,4 @@
-# Base image with CUDA 11.8 and cuDNN — matches the NVIDIA drivers on AWS Deep Learning AMI ami-0260c4d597dcc8641
+# CUDA 11.8 + cuDNN8 — matches the NVIDIA drivers on AWS Deep Learning AMI
 FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -6,11 +6,12 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV TRANSFORMERS_CACHE=/app/.cache
 ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
-ENV UV_PYTHON=python3.11
-ENV UV_NO_CACHE=1
 
-# Install Python 3.11 and ffmpeg (required by openai-whisper and ffmpeg-python)
+# Python 3.11 is in ubuntu 22.04 universe repo; ffmpeg required by whisper
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    software-properties-common \
+    && add-apt-repository universe \
+    && apt-get update && apt-get install -y --no-install-recommends \
     python3.11 \
     python3.11-dev \
     python3.11-venv \
@@ -23,15 +24,18 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /app
 
-# Copy lockfile and project manifest before source to maximize layer caching
+# Copy project manifest and lockfile before source (maximize layer cache)
 COPY pyproject.toml uv.lock ./
 
-# Install only production dependencies from pyproject.toml (no dev group)
-RUN uv sync --frozen --no-dev --python 3.11
+# Install production deps into /app/.venv
+RUN uv sync --frozen --no-dev --python python3.11
 
-# Install GPU-enabled PyTorch — separate index URL required, not in pyproject.toml
-RUN uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 --python 3.11
+# Install GPU PyTorch INTO the project venv (not system Python)
+# Must target the venv uv sync just created, not the system interpreter
+RUN uv pip install torch torchvision torchaudio \
+    --index-url https://download.pytorch.org/whl/cu118 \
+    --python /app/.venv/bin/python
 
 COPY . .
 
-CMD ["uv", "run", "service.py"]
+CMD ["uv", "run", "python", "service.py"]
