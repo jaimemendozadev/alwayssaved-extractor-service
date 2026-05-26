@@ -12,6 +12,7 @@ For more information about What is AlwaysSaved and its Key Features, refer to th
 
 - [3rd Party Services Needed](#3rd-party-services-needed)
 - [Environment and AWS Systems Manager Parameter Store Variables](#environment-and-aws-systems-manager-parameter-store-variables)
+- [Starting the App](#starting-the-app)
 - [File Structure and Service Flow](#file-structure-and-service-flow)
 - [AlwaysSaved System Design / App Flow](#alwayssaved-system-design--app-flow)
 
@@ -86,6 +87,22 @@ For clarification, your `AWS_BUCKET_BASE_URL` really means the URL that points t
 https://<AWS_BUCKET_NAME>.s3.amazonaws.com
 
 ```
+
+<br />
+
+[Back to TOC](#table-of-contents-toc)
+
+---
+
+## Starting the App
+
+You'll need the <a href="https://docs.astral.sh/uv/" target="_blank">uv Python package/project manager</a> to start the app.
+
+- If `uv` is not installed on your computer, <a href="https://docs.astral.sh/uv/getting-started/installation/" target="_blank">reference the documentation</a> for installation instructions.
+
+The project also leverages the <a href="https://docs.astral.sh/ruff/" target="_blank">ruff Python linter/code formatter</a>.
+
+- If `ruff` is not installed on your computer, <a href="https://docs.astral.sh/ruff/installation/" target="_blank">reference the documentation</a> for installation instructions.
 
 <br />
 
