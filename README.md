@@ -104,6 +104,28 @@ The project also leverages the <a href="https://docs.astral.sh/ruff/" target="_b
 
 - If `ruff` is not installed on your computer, <a href="https://docs.astral.sh/ruff/installation/" target="_blank">reference the documentation</a> for installation instructions.
 
+Once `uv` and `ruff` are installed, run the following command in your terminal to create the virtual environment, install the project dependencies, and start the service:
+
+```
+$ uv run
+```
+
+<strong>IMPORTANT</strong>: During development, once the virtual environment has been created locally in the repo, enter the following command in a separate terminal window to have the terminal enter the virtual environment that was created:
+
+```
+$ source .venv/bin/activate
+```
+
+Use this terminal window during development to commit your changes with Git. By being in the virtual environment, any changes attempted to be committed will run the pre-commit hook and lint/format the code with `ruff`.
+
+If any lint errors need to be fixed, you must first fix them and recommit the changes. Once `ruff` approves the changes, the commit will be saved and you can uploaded the changes to GitHub.
+
+To exit the terminal window from the virtual environment, run the following command:
+
+```
+$ deactivate
+```
+
 <br />
 
 [Back to TOC](#table-of-contents-toc)
