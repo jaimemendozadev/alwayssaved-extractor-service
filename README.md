@@ -105,6 +105,30 @@ The project also leverages the <a href="https://docs.astral.sh/ruff/" target="_b
 
 - If `ruff` is not installed on your computer, <a href="https://docs.astral.sh/ruff/installation/" target="_blank">reference the documentation</a> for installation instructions.
 
+The service uses <a href="https://ffmpeg.org/" target="_blank">FFmpeg</a> to extract audio from video files. You must have the FFmpeg binary installed on your system separately from the Python dependencies.
+
+- On macOS, install via <a href="https://brew.sh/" target="_blank">Homebrew</a>:
+
+```
+$ brew install ffmpeg
+```
+
+- For other operating systems, <a href="https://ffmpeg.org/download.html" target="_blank">reference the FFmpeg download page</a> for installation instructions.
+
+Once `uv`, `ruff`, and `ffmpeg` are installed, run the following command at the root of the repo to create the virtual environment and install all project and dev dependencies (including `pre-commit`):
+
+```
+$ uv sync
+```
+
+After `uv sync` completes, run the following command once to register the `pre-commit` git hooks:
+
+```
+$ pre-commit install
+```
+
+This wires up the `ruff` linter/formatter to run automatically whenever you commit changes.
+
 <br />
 
 [Back to TOC](#table-of-contents-toc)
@@ -113,23 +137,29 @@ The project also leverages the <a href="https://docs.astral.sh/ruff/" target="_b
 
 ## Starting the App
 
-Once all the dependencies are installed, run the following command in your terminal to create the virtual environment and start the service:
+Once all the dependencies are installed and `pre-commit` hooks are registered (see [Installing the App Dependencies](#installing-the-app-dependencies)), open two separate terminal windows at the root of the repo.
+
+**Terminal Window 1 — Run the service:**
 
 ```
 $ uv run python service.py
 ```
 
-<strong>IMPORTANT</strong>: During development, once the virtual environment has been created locally in the repo, enter the following command in a separate terminal window to have the terminal enter the virtual environment that was created:
+This starts the Extractor Service and keeps it running.
+
+**Terminal Window 2 — Development and Git commits:**
+
+Enter the virtual environment that was created by `uv sync`:
 
 ```
 $ source .venv/bin/activate
 ```
 
-Use this terminal window during development to commit your changes with Git. By being in the virtual environment, any changes attempted to be committed will run the pre-commit hook and lint/format the code with `ruff`.
+Use this terminal window during development to stage and commit your changes with Git. Because the `pre-commit` hooks are registered, any `git commit` will automatically run `ruff` to lint and format your code before the commit is saved.
 
-If any lint errors need to be fixed, you must first fix them and recommit the changes. Once `ruff` approves the changes, the commit will be saved and you can uploaded the changes to GitHub.
+If `ruff` finds errors, the commit will be blocked. Fix the reported issues, re-stage the files, and commit again. Once `ruff` passes, the commit will be saved and you can push the changes to GitHub.
 
-To exit the terminal window from the virtual environment, run the following command:
+To exit the virtual environment when you're done, run:
 
 ```
 $ deactivate
