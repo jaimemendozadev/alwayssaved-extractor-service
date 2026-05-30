@@ -12,6 +12,7 @@ For more information about What is AlwaysSaved and its Key Features, refer to th
 
 - [3rd Party Services Needed](#3rd-party-services-needed)
 - [Environment and AWS Systems Manager Parameter Store Variables](#environment-and-aws-systems-manager-parameter-store-variables)
+- [Installing the App Dependencies](#installing-the-app-dependencies)
 - [Starting the App](#starting-the-app)
 - [File Structure and Service Flow](#file-structure-and-service-flow)
 - [AlwaysSaved System Design / App Flow](#alwayssaved-system-design--app-flow)
@@ -94,7 +95,7 @@ https://<AWS_BUCKET_NAME>.s3.amazonaws.com
 
 ---
 
-## Starting the App
+## Installing the App Dependencies
 
 You'll need the <a href="https://docs.astral.sh/uv/" target="_blank">uv Python package/project manager</a> to start the app.
 
@@ -104,10 +105,18 @@ The project also leverages the <a href="https://docs.astral.sh/ruff/" target="_b
 
 - If `ruff` is not installed on your computer, <a href="https://docs.astral.sh/ruff/installation/" target="_blank">reference the documentation</a> for installation instructions.
 
-Once `uv` and `ruff` are installed, run the following command in your terminal to create the virtual environment, install the project dependencies, and start the service:
+<br />
+
+[Back to TOC](#table-of-contents-toc)
+
+---
+
+## Starting the App
+
+Once all the dependencies are installed, run the following command in your terminal to create the virtual environment and start the service:
 
 ```
-$ uv run
+$ uv run python service.py
 ```
 
 <strong>IMPORTANT</strong>: During development, once the virtual environment has been created locally in the repo, enter the following command in a separate terminal window to have the terminal enter the virtual environment that was created:
