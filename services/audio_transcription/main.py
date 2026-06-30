@@ -14,7 +14,7 @@ def transcribe_audio_file(file_name: str, whisper_model: whisper.model) -> str |
 
         with open(file=transcript_file_name, mode="w", encoding="utf-8") as file:
             file.write(result["text"])
-            print(f"✅ Audio successfully transcribed: {file_name}")
+
             return transcript_file_name
 
         return None

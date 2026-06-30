@@ -36,8 +36,6 @@ def convert_mp4_to_mp3(mp4_path: str, video_title: str) -> str:
     if not os.path.exists(mp4_path):
         raise FileNotFoundError(f"❌ MP4 file not found: {mp4_path}")
 
-    print("🎧 Extracting audio from MP4 using ffmpeg...")
-
     command = [
         "ffmpeg",
         "-i",
@@ -52,7 +50,6 @@ def convert_mp4_to_mp3(mp4_path: str, video_title: str) -> str:
     ]
 
     subprocess.run(command, check=True)
-    print(f"✅ Audio extracted to: {mp3_file}")
 
     return sanitized_title
 
@@ -92,12 +89,8 @@ def download_and_convert_from_s3(s3_key: str) -> s3DownloadConvertResult | None:
 
         base_title, file_extension = os.path.splitext(base_filename)
 
-        print(f"📥 Downloading from S3: s3://{bucket_name}/{s3_key}")
-
         # File is successfully downloaded or an Exception is raised
         download_with_retry(bucket_name, s3_key, base_filename)
-
-        print(f"🎞️ Download complete: {base_filename}")
 
         if file_extension == ".mp3":
             return {
@@ -106,7 +99,6 @@ def download_and_convert_from_s3(s3_key: str) -> s3DownloadConvertResult | None:
             }
 
         video_title = convert_mp4_to_mp3(base_filename, base_title)
-        print(f"✅ MP3 created: {video_title}.mp3")
 
         return {"file_name": video_title, "file_extension": file_extension}
 
