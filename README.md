@@ -44,10 +44,12 @@ Your newly created `Embedding Queue` URL will be saved in the AWS Parmeter Store
 
 ## Environment and AWS Systems Manager Parameter Store Variables
 
-You'll need to create a `.env` file at the root of this repo. There's only one variable that you have to prefill, which is the Region where all your AWS s3 Bucket and SQS Queues are located.
+You'll need to create a `.env` file at the root of this repo. There are only two variables that you have to prefill, which is the Region where all your AWS s3 Bucket and SQS Queues are located and if you're running the Python in a local or production enviroment.
 
 ```
 AWS_REGION=
+
+PYTHON_ENVIRONMENT=
 
 ```
 

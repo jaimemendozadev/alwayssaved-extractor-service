@@ -31,9 +31,18 @@ from services.utils.types.main import ExtractorStatus, FilePayload, s3MediaUploa
 # GLOBAL INIT
 load_dotenv()
 
+PYTHON_ENVIRONMENT = os.getenv("PYTHON_ENVIRONMENT", "production")
+
 # Force device detection once in main context
 # 5-9-26: May need to fix for access to Macbook Pro GPU access
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+DEVICE = "cpu"
+if PYTHON_ENVIRONMENT == "production" and torch.cuda.is_available():
+    DEVICE = "cuda"
+elif torch.backends.mps.is_available():
+    DEVICE = torch.device("mps")
+    print("Using 🍎 Apple GPU")
+
 print(f"✅ [BOOT] Using device: {DEVICE}")
 
 WHISPER_MODEL_NAME = "base"  # Or turbo -> confirm this is valid
