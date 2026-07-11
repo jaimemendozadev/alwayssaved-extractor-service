@@ -27,6 +27,7 @@ from services.aws.sqs import (
 )
 from services.utils.mongodb.main import create_mongodb_instance
 from services.utils.types.main import ExtractorStatus, FilePayload, s3MediaUpload
+from services.utils.main import format_timestamp
 
 # GLOBAL INIT
 load_dotenv()
@@ -63,7 +64,7 @@ Returns {file_name}.txt string to callsite or None.
 """
 
 
-def transcribe_audio(file_name: str) -> str | None:
+def transcribe_audio(file_name: str, include_timestamps: bool = False) -> str | None:
 
     try:
         print(f"💻 [subprocess] Using device in transcribe_audio: {DEVICE}")
@@ -82,6 +83,17 @@ def transcribe_audio(file_name: str) -> str | None:
 
         with open(file=transcript_file_name, mode="w", encoding="utf-8") as file:
             file.write(result["text"])
+
+        transcript_file_name = f"{file_name}.txt"
+
+        with open(file=transcript_file_name, mode="w", encoding="utf-8") as file:
+            if include_timestamps:
+                for segment in result["segments"]:
+                    line_timestamp = format_timestamp(segment["start"])
+                    line_text = segment["text"].strip()
+                    file.write(f"{line_timestamp}: {line_text}\n")
+            else:
+                file.write(result["text"])
 
         return transcript_file_name
 
