@@ -150,7 +150,8 @@ async def process_media_upload(
 
         audio_payload: FilePayload = {"s3_key": "", "file_id": ""}
 
-        # 3) Upload the mp3 audio and transcript to s3 and create File document.
+        # 3) Upload the transcript to s3 and create File document.
+        # Upload the .mp3 file to s3 if target file was an .mp4 file.
         if file_extension == ".mp4":
             audio_payload = await upload_s3_file_record_in_db(
                 s3_client,
@@ -190,7 +191,7 @@ async def process_media_upload(
             ):
                 raise ValueError("Failed to upload audio to S3.")
 
-        # 4) Delete local files from Extractor Service.
+        # 4) Delete local .txt & .mp3 files from Extractor Service.
         delete_local_file(mp3_abs_path)
         mp3_abs_path = None
 
