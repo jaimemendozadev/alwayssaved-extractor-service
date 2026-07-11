@@ -17,7 +17,7 @@ async def upload_s3_file_record_in_db(
     """
     Creates a new MongoDB File, uploads the File to s3, then updates the newly created File document with the s3_key.
 
-    file_name is the media file name with .extension
+    file_name property in BaseFilePayload dictionary is the media file name with the .extension.
     """
 
     user_id = base_file_payload["user_id"]
@@ -70,7 +70,7 @@ async def upload_s3_file_record_in_db(
             )
         )
 
-        return {"s3_key": target_s3_key, "file_id": new_file_id}
+        return {"uploaded_s3_key": target_s3_key, "new_file_id": new_file_id}
 
     except boto3.exceptions.S3UploadFailedError as e:
         print(f"❌ Error uploading file to s3 in upload_to_s3: {e}")
@@ -81,4 +81,4 @@ async def upload_s3_file_record_in_db(
     except ValueError as e:
         print(f"❌ Value Error in upload_to_s3: {e}")
 
-    return {"s3_key": "", "file_id": ""}
+    return {"uploaded_s3_key": "", "new_file_id": ""}

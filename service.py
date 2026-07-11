@@ -163,8 +163,7 @@ async def process_media_upload(
 
         audio_payload: FilePayload = {"s3_key": "", "file_id": ""}
 
-        # 3) Upload the transcript to s3 and create File document.
-        # Upload the .mp3 file to s3 if target file was an .mp4 file.
+        # 2a) Upload the .mp3 file to s3 if target file was an .mp4 file.
         if file_extension == ".mp4":
             audio_payload = await upload_s3_file_record_in_db(
                 s3_client,
@@ -177,6 +176,7 @@ async def process_media_upload(
                 },
             )
 
+        # 3) Upload the transcript to s3 and create File document.
         transcript_payload = await upload_s3_file_record_in_db(
             s3_client,
             mongo_client,
@@ -191,16 +191,19 @@ async def process_media_upload(
         if file_extension == "mp4":
             if not all(
                 [
-                    audio_payload.get("s3_key"),
-                    audio_payload.get("file_id"),
-                    transcript_payload.get("s3_key"),
-                    transcript_payload.get("file_id"),
+                    audio_payload.get("uploaded_s3_key"),
+                    audio_payload.get("new_file_id"),
+                    transcript_payload.get("uploaded_s3_key"),
+                    transcript_payload.get("new_file_id"),
                 ]
             ):
                 raise ValueError("Failed to upload audio or transcript to S3.")
         else:
             if not all(
-                [transcript_payload.get("s3_key"), transcript_payload.get("file_id")]
+                [
+                    transcript_payload.get("uploaded_s3_key"),
+                    transcript_payload.get("new_file_id"),
+                ]
             ):
                 raise ValueError("Failed to upload audio to S3.")
 

@@ -2,8 +2,8 @@ from typing import TypedDict
 
 
 class FilePayload(TypedDict):
-    s3_key: str
-    file_id: str
+    uploaded_s3_key: str
+    new_file_id: str
 
 
 class s3MediaUpload(TypedDict):
