@@ -7,7 +7,6 @@ import time
 import boto3
 
 from services.aws.ssm import get_secret
-from services.utils.types.main import s3DownloadConvertResult
 
 s3_client = boto3.client("s3")
 
@@ -25,20 +24,21 @@ def delete_local_file(file_path: str):
         print(f"❌ Failed to delete file {file_path}: {e}")
 
 
+# TODO: Delete and reimplement logic for Frontend.
 def sanitize_filename(filename: str) -> str:
     return re.sub(r'[\\/*?:"<>|]', "", filename).strip()
 
 
-"""Converts .mp4 to .mp3 file and immediately deletes .mp4 file."""
+"""
+Converts .mp4 to .mp3 file and immediately deletes .mp4 file.
+"""
 
 
 def convert_mp4_to_mp3(base_filename: str) -> None:
 
     base_title, _ = os.path.splitext(base_filename)
 
-    sanitized_title = sanitize_filename(base_title)
-
-    mp3_file = f"{sanitized_title}.mp3"
+    mp3_file = f"{base_title}.mp3"
 
     if not os.path.exists(base_filename):
         raise FileNotFoundError(f"❌ MP4 file not found: {base_filename}")
@@ -83,12 +83,12 @@ def download_with_retry(
     raise Exception(f"Failed to download {s3_key} from S3 after {retries} attempts.")
 
 
-def download_and_convert_from_s3(s3_key: str) -> s3DownloadConvertResult | None:
+# 7-10-26 TODO: Need to handle sanitized .mp4 and .mp3 filename titles on Frontend before uploading to s3.
+def download_and_convert_from_s3(s3_key: str) -> None:
     """
     Downloads .mp3 or .mp4 files from S3 using the s3_key.
     Converts .mp4 files to .mp3 files.
       - Deletes local .mp4 file.
-    Returns: dict of sanitized file_name and file_extension.
     """
 
     try:
@@ -98,22 +98,15 @@ def download_and_convert_from_s3(s3_key: str) -> s3DownloadConvertResult | None:
 
         base_filename = os.path.basename(s3_key)  # e.g., video1.mp4
 
-        base_title, file_extension = os.path.splitext(base_filename)
+        _, file_extension = os.path.splitext(base_filename)
 
         # File is successfully downloaded or an Exception is raised
         download_with_retry(bucket_name, s3_key)
 
-        sanitized_filename = sanitize_filename(base_title)
-
         if file_extension == ".mp3":
-            return {
-                "file_name": sanitized_filename,
-                "file_extension": file_extension,
-            }
+            return
 
         convert_mp4_to_mp3(base_filename)
-
-        return {"file_name": sanitized_filename, "file_extension": file_extension}
 
     except Exception as e:
         print(f"❌ Error in download_and_convert_from_s3: {e}")

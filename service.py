@@ -57,6 +57,12 @@ gpu_lock = asyncio.Lock()
 
 
 # AUDIO TRANSCRIPTION
+
+"""
+Returns {file_name}.txt string to callsite or None.
+"""
+
+
 def transcribe_audio(file_name: str) -> str | None:
 
     try:
@@ -70,6 +76,7 @@ def transcribe_audio(file_name: str) -> str | None:
 
 
 # MEDIA PROCESSING
+# NOTE: process_media_upload will not handle sanitizing media file title. Should be handled by Frontend.
 async def process_media_upload(
     upload: s3MediaUpload, mongo_client: AsyncMongoClient
 ) -> ExtractorStatus:
@@ -85,15 +92,14 @@ async def process_media_upload(
         # 1) Download the s3 file.
         audio_download_start_time = time.time()
 
-        download_convert_info = await asyncio.to_thread(
-            download_and_convert_from_s3, s3_key
-        )
+        await asyncio.to_thread(download_and_convert_from_s3, s3_key)
 
-        if not download_convert_info:
-            raise ValueError("Media download failed.")
+        base_filename = os.path.basename(s3_key)  # e.g., video1.mp4
 
-        file_name = download_convert_info.get("file_name", "")
-        file_extension = download_convert_info.get("file_extension", "")
+        file_name, file_extension = os.path.splitext(base_filename)
+
+        if not os.path.exists(f"{file_name}.mp3"):
+            raise ValueError("download_and_convert_from_s3 failed.")
 
         audio_elapsed_time = time.time() - audio_download_start_time
 
