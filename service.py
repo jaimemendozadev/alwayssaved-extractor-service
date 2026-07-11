@@ -142,6 +142,7 @@ async def process_media_upload(
         mp3_abs_path = os.path.abspath(f"{file_name}.mp3")
 
         # 2) Transcribe audio file.
+        # 7-11-26 TODO: Implement timestamped transcripting for paid subscriptions feature.
         async with gpu_lock:
             transcribe_start_time = time.time()
             base_transcript_file_name = transcribe_audio(file_name)

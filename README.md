@@ -53,6 +53,16 @@ PYTHON_ENVIRONMENT=
 
 ```
 
+<br />
+
+`IMPORTANT`:
+
+- The `.env` file gets copied into the final 🐳 Docker image. The only **IMPORTANT** variable that really needs to be set for production is the `PYTHON_ENVIRONMENT` variable set to `production`.
+
+- In local development, if you set the `PYTHON_ENVIRONMENT` to `development` and you're running a MacBook with a GPU, it'll try to use the GPU to process the media files and audio transcription. Otherwise it defaults to the `cpu`.
+
+<br />
+
 For both development and production, there are a lot of variables that we couldn't store in the .env file, so we had to resort to using the <a href="https://aws.amazon.com/systems-manager/" target="_blank">AWS Systems Manager Parameter Store</a> ahead of time in order to get the app functioning.
 
 The following variable keys have their values stored in the Parameter store as follows:
