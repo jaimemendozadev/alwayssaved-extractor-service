@@ -32,8 +32,12 @@ def sanitize_filename(filename: str) -> str:
 """Converts .mp4 to .mp3 file and immediately deletes .mp4 file."""
 
 
-def convert_mp4_to_mp3(base_filename: str, video_title: str) -> str:
-    sanitized_title = sanitize_filename(video_title)
+def convert_mp4_to_mp3(base_filename: str) -> None:
+
+    base_title, _ = os.path.splitext(base_filename)
+
+    sanitized_title = sanitize_filename(base_title)
+
     mp3_file = f"{sanitized_title}.mp3"
 
     if not os.path.exists(base_filename):
@@ -55,8 +59,6 @@ def convert_mp4_to_mp3(base_filename: str, video_title: str) -> str:
     subprocess.run(command, check=True)
 
     delete_local_file(base_filename)
-
-    return sanitized_title
 
 
 def download_with_retry(
@@ -82,6 +84,7 @@ def download_and_convert_from_s3(s3_key: str) -> s3DownloadConvertResult | None:
     """
     Downloads .mp3 or .mp4 files from S3 using the s3_key.
     Converts .mp4 files to .mp3 files.
+      - Deletes local .mp4 file.
     Returns: dict of sanitized file_name and file_extension.
     """
 
@@ -97,15 +100,17 @@ def download_and_convert_from_s3(s3_key: str) -> s3DownloadConvertResult | None:
         # File is successfully downloaded or an Exception is raised
         download_with_retry(bucket_name, s3_key, base_filename)
 
+        sanitized_filename = sanitize_filename(base_title)
+
         if file_extension == ".mp3":
             return {
-                "file_name": sanitize_filename(base_title),
+                "file_name": sanitized_filename,
                 "file_extension": file_extension,
             }
 
-        sanitized_video_title = convert_mp4_to_mp3(base_filename, base_title)
+        convert_mp4_to_mp3(base_filename)
 
-        return {"file_name": sanitized_video_title, "file_extension": file_extension}
+        return {"file_name": sanitized_filename, "file_extension": file_extension}
 
     except Exception as e:
         print(f"❌ Error in download_and_convert_from_s3: {e}")
