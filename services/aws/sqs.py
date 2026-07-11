@@ -39,6 +39,7 @@ def get_extractor_sqs_request() -> Dict[str, Any]:
 
 
 class EmbeddingPayload(TypedDict):
+    original_filename: str
     note_id: str
     file_id: str
     user_id: str

@@ -255,6 +255,7 @@ Then for each SQS Message, for each `media_upload` in the Message Payload, the `
 
 ```
   {
+      original_filename: string;
       note_id: string;
       file_id: string;
       user_id: string;

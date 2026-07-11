@@ -218,6 +218,7 @@ async def process_media_upload(
         await asyncio.to_thread(
             send_embedding_sqs_message,
             {
+                "original_filename": base_filename,
                 "note_id": note_id,
                 "user_id": user_id,
                 "file_id": transcript_payload["file_id"],
