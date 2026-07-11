@@ -62,14 +62,17 @@ def convert_mp4_to_mp3(base_filename: str) -> None:
 
 
 def download_with_retry(
-    bucket: str, s3_key: str, local_path: str, retries: int = 5, delay: int = 2
+    bucket_name: str, s3_key: str, retries: int = 5, delay: int = 2
 ) -> None:
     """Try downloading from S3 with retries and exponential backoff."""
+
+    base_filename = os.path.basename(s3_key)  # e.g., video1.mp4
+
     for attempt in range(retries):
         try:
-            with open(local_path, "wb") as f:
-                s3_client.download_fileobj(bucket, s3_key, f)
-            if os.path.exists(local_path):
+            with open(base_filename, "wb") as f:
+                s3_client.download_fileobj(bucket_name, s3_key, f)
+            if os.path.exists(base_filename):
                 return
         except Exception:
             logging.error("An exception occurred in download_with_retry", exc_info=True)
@@ -98,7 +101,7 @@ def download_and_convert_from_s3(s3_key: str) -> s3DownloadConvertResult | None:
         base_title, file_extension = os.path.splitext(base_filename)
 
         # File is successfully downloaded or an Exception is raised
-        download_with_retry(bucket_name, s3_key, base_filename)
+        download_with_retry(bucket_name, s3_key)
 
         sanitized_filename = sanitize_filename(base_title)
 
