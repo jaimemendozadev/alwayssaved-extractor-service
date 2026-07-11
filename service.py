@@ -18,7 +18,7 @@ from services.audio_extractor.main import (
     delete_local_file,
     download_and_convert_from_s3,
 )
-from services.audio_transcription.main import transcribe_audio_file
+
 from services.aws.s3 import upload_s3_file_record_in_db
 from services.aws.sqs import (
     delete_extractor_sqs_message,
@@ -67,16 +67,35 @@ def transcribe_audio(file_name: str) -> str | None:
 
     try:
         print(f"💻 [subprocess] Using device in transcribe_audio: {DEVICE}")
+
         model = whisper.load_model(WHISPER_MODEL_NAME, device=str(DEVICE))
+
         print(f"📦 Model loaded on: {next(model.parameters()).device}")
-        return transcribe_audio_file(file_name, model)
+
+        transcript_file_name = f"{file_name}.txt"
+
+        mp3_file_name = f"{file_name}.mp3"
+
+        mp3_file_abs_path = os.path.abspath(mp3_file_name)
+
+        result = model.transcribe(mp3_file_abs_path, fp16=False)
+
+        with open(file=transcript_file_name, mode="w", encoding="utf-8") as file:
+            file.write(result["text"])
+
+        return transcript_file_name
+
     except Exception as e:
         print(f"❌ [subprocess] Failed in transcribe_audio: {e}")
     return None
 
 
-# MEDIA PROCESSING
-# NOTE: process_media_upload will not handle sanitizing media file title. Should be handled by Frontend.
+"""
+MEDIA PROCESSING
+NOTE: process_media_upload will not handle sanitizing media file title. Should be handled by Frontend.
+"""
+
+
 async def process_media_upload(
     upload: s3MediaUpload, mongo_client: AsyncMongoClient
 ) -> ExtractorStatus:
@@ -98,6 +117,7 @@ async def process_media_upload(
 
         file_name, file_extension = os.path.splitext(base_filename)
 
+        # If an .mp3 file was not downloaded or created locally, raise error.
         if not os.path.exists(f"{file_name}.mp3"):
             raise ValueError("download_and_convert_from_s3 failed.")
 

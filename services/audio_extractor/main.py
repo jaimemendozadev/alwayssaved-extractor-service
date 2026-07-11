@@ -10,9 +10,10 @@ from services.aws.ssm import get_secret
 
 s3_client = boto3.client("s3")
 
+"""Deletes the local MP3 file after uploading to S3."""
+
 
 def delete_local_file(file_path: str):
-    """Deletes the local MP3 file after uploading to S3."""
     try:
         if file_path and os.path.exists(file_path):
             logging.info(f"🔎 Trying to delete: {file_path}")
