@@ -34,7 +34,6 @@ load_dotenv()
 PYTHON_ENVIRONMENT = os.getenv("PYTHON_ENVIRONMENT", "production")
 
 # Force device detection once in main context
-# 5-9-26: May need to fix for access to Macbook Pro GPU access
 
 DEVICE = "cpu"
 if PYTHON_ENVIRONMENT == "production" and torch.cuda.is_available():

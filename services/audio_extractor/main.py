@@ -29,17 +29,20 @@ def sanitize_filename(filename: str) -> str:
     return re.sub(r'[\\/*?:"<>|]', "", filename).strip()
 
 
-def convert_mp4_to_mp3(mp4_path: str, video_title: str) -> str:
+"""Converts .mp4 to .mp3 file and immediately deletes .mp4 file."""
+
+
+def convert_mp4_to_mp3(base_filename: str, video_title: str) -> str:
     sanitized_title = sanitize_filename(video_title)
     mp3_file = f"{sanitized_title}.mp3"
 
-    if not os.path.exists(mp4_path):
-        raise FileNotFoundError(f"❌ MP4 file not found: {mp4_path}")
+    if not os.path.exists(base_filename):
+        raise FileNotFoundError(f"❌ MP4 file not found: {base_filename}")
 
     command = [
         "ffmpeg",
         "-i",
-        mp4_path,
+        base_filename,
         "-vn",
         "-acodec",
         "libmp3lame",
@@ -50,6 +53,8 @@ def convert_mp4_to_mp3(mp4_path: str, video_title: str) -> str:
     ]
 
     subprocess.run(command, check=True)
+
+    delete_local_file(base_filename)
 
     return sanitized_title
 
@@ -98,9 +103,9 @@ def download_and_convert_from_s3(s3_key: str) -> s3DownloadConvertResult | None:
                 "file_extension": file_extension,
             }
 
-        video_title = convert_mp4_to_mp3(base_filename, base_title)
+        sanitized_video_title = convert_mp4_to_mp3(base_filename, base_title)
 
-        return {"file_name": video_title, "file_extension": file_extension}
+        return {"file_name": sanitized_video_title, "file_extension": file_extension}
 
     except Exception as e:
         print(f"❌ Error in download_and_convert_from_s3: {e}")
