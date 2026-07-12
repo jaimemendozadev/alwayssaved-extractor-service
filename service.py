@@ -221,8 +221,8 @@ async def process_media_upload(
                 "original_filename": base_filename,
                 "note_id": note_id,
                 "user_id": user_id,
-                "file_id": transcript_payload["file_id"],
-                "transcript_s3_key": transcript_payload["s3_key"],
+                "file_id": transcript_payload["new_file_id"],
+                "transcript_s3_key": transcript_payload["uploaded_s3_key"],
             },
         )
 
