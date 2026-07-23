@@ -281,6 +281,15 @@ If you need a better view of the entire screenshot, feel free to [download the E
 
 <br />
 
+You can inspect the rest of the repos for each service/component in the diagram at the following URLs:
+
+- [AlwaysSaved Frontend](https://github.com/jaimemendozadev/alwayssaved-fe-app)
+- [Embedding Service](https://github.com/jaimemendozadev/alwayssaved-embedding-service)
+- [LLM Service](https://github.com/jaimemendozadev/alwayssaved-llm-service)
+- [Terraform Infra](https://github.com/jaimemendozadev/alwayssaved-terraform)
+
+<br />
+
 [Back to TOC](#table-of-contents-toc)
 
 ---
