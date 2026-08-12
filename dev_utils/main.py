@@ -1,16 +1,19 @@
 import json
 import os
+import subprocess
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from typing import TYPE_CHECKING, Any, Dict, List
 
 import boto3
+import whisper
 import yt_dlp
 from botocore.exceptions import BotoCoreError, ClientError
 from bson.objectid import ObjectId
 from dotenv import load_dotenv
 
 from services.aws.ssm import get_secret
+from services.utils.main import format_timestamp
 
 if TYPE_CHECKING:
     from mypy_boto3_sqs import SQSClient
@@ -25,6 +28,12 @@ s3_video_list: List[str] = []
 
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 sqs_client: "SQSClient" = boto3.client("sqs", region_name=AWS_REGION)
+
+# dev_utils/main.py lives at <project_root>/dev_utils/main.py
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DOWNLOADS_DIR = os.path.expanduser("~/Downloads")
+
+WHISPER_MODEL_NAME = "base"
 
 
 load_dotenv()
@@ -179,3 +188,114 @@ def _get_youtube_videos(youtube_urls: List[str]):
     for url in youtube_urls:
         print(f"🚀 Initiate {url} download...")
         _download_video_from_url(url)
+
+
+def _resolve_media_path(file_name_or_path: str) -> str:
+    """
+    Looks up a media file by absolute path, then in the project root,
+    then in ~/Downloads. Raises FileNotFoundError if none match.
+    """
+
+    if os.path.isabs(file_name_or_path) and os.path.exists(file_name_or_path):
+        return file_name_or_path
+
+    project_root_path = os.path.join(PROJECT_ROOT, file_name_or_path)
+    if os.path.exists(project_root_path):
+        return project_root_path
+
+    downloads_path = os.path.join(DOWNLOADS_DIR, file_name_or_path)
+    if os.path.exists(downloads_path):
+        return downloads_path
+
+    raise FileNotFoundError(
+        f"❌ Could not find '{file_name_or_path}' in project root or ~/Downloads."
+    )
+
+
+def _mp4_to_mp3_keep_original(mp4_abs_path: str) -> str:
+    """
+    Converts an .mp4 file to .mp3 via ffmpeg WITHOUT deleting the source .mp4.
+    Writes the .mp3 alongside the .mp4 (same directory).
+    """
+
+    base_title, _ = os.path.splitext(mp4_abs_path)
+    mp3_abs_path = f"{base_title}.mp3"
+
+    command = [
+        "ffmpeg",
+        "-i",
+        mp4_abs_path,
+        "-vn",
+        "-acodec",
+        "libmp3lame",
+        "-ab",
+        "192k",
+        "-y",
+        mp3_abs_path,
+    ]
+
+    subprocess.run(command, check=True)
+
+    return mp3_abs_path
+
+
+def transcribe_local_media(
+    file_name_or_path: str, include_timestamps: bool = True
+) -> str | None:
+    """
+    Accepts a local .mp4 or .mp3 file (bare filename, or full path).
+      - .mp4 files are converted to .mp3 (source .mp4 is kept).
+      - .mp3 files are used as-is.
+    Transcribes the resulting .mp3 with Whisper and writes a timestamped
+    .txt transcript to the project root. Nothing is deleted. Returns the
+    transcript's abs path, or None on failure.
+    """
+
+    try:
+        media_path = _resolve_media_path(file_name_or_path)
+
+        base_filename = os.path.basename(media_path)
+        file_name, file_extension = os.path.splitext(base_filename)
+
+        if file_extension == ".mp4":
+            print(f"🎬 Converting {base_filename} to .mp3 (keeping original .mp4)...")
+            mp3_abs_path = _mp4_to_mp3_keep_original(media_path)
+        elif file_extension == ".mp3":
+            mp3_abs_path = media_path
+        else:
+            raise ValueError(f"Unsupported file extension: {file_extension}")
+
+        if not os.path.exists(mp3_abs_path):
+            raise FileNotFoundError(f"❌ Expected mp3 not found: {mp3_abs_path}")
+
+        print(f"🧠 Loading Whisper model '{WHISPER_MODEL_NAME}'...")
+        model = whisper.load_model(WHISPER_MODEL_NAME)
+
+        print(f"📝 Transcribing {mp3_abs_path}...")
+        result = model.transcribe(mp3_abs_path, fp16=False)
+
+        transcript_abs_path = os.path.join(PROJECT_ROOT, f"{file_name}.txt")
+
+        with open(transcript_abs_path, mode="w", encoding="utf-8") as file:
+            if include_timestamps:
+                for segment in result["segments"]:
+                    line_timestamp = format_timestamp(segment["start"])
+                    line_text = segment["text"].strip()
+                    file.write(f"{line_timestamp}: {line_text}\n")
+            else:
+                file.write(result["text"])
+
+        print(f"✅ Transcript saved: {transcript_abs_path}")
+        return transcript_abs_path
+
+    except Exception as e:
+        print(f"❌ Error in transcribe_local_media: {e}")
+        return None
+
+
+# _get_youtube_videos(["https://www.youtube.com/watch?v=x2VHFgyawPE"])
+
+# Example usage:
+# transcribe_local_media("my_video.mp4")             # project root or ~/Downloads, timestamps on
+# transcribe_local_media("my_audio.mp3", False)       # plain text, no timestamps
+# transcribe_local_media("/absolute/path/clip.mp4")   # full path also works
