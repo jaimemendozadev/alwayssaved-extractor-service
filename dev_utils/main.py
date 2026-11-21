@@ -155,14 +155,22 @@ def _download_video_from_url(
         print("📥 Downloading full MP4 from YouTube...")
 
         ydl_opts: Dict[str, Any] = {
-            "format": "best[ext=mp4]/best",  # enforce a usable mp4 file
+            # Format 18 (the old combined 360p stream) gets truncated by YouTube.
+            # Grab separate video+audio streams and let ffmpeg merge them to mp4.
+            "format": "bv*[ext=mp4]+ba[ext=m4a]/bv*+ba/b",
+            # Download in chunks to avoid YouTube cutting the connection early.
+            "http_chunk_size": 10 * 1024 * 1024,
             "merge_output_format": "mp4",
-            "outtmpl": "%(title)s.%(ext)s",  # still saves with YouTube title
+            "outtmpl": os.path.join(DOWNLOADS_DIR, "%(title)s.%(ext)s"),
             "quiet": False,
             "noplaylist": True,
-            "ignoreerrors": True,
+            # Don't set ignoreerrors=True: it swallows the real error and hides failures.
             "nopart": True,
             "overwrites": True,
+            # YouTube now requires a JS runtime to solve its player challenges.
+            # yt-dlp only auto-enables deno; point it at node instead.
+            "js_runtimes": {"node": {}},
+            "remote_components": ["ejs:github"],
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -293,9 +301,9 @@ def transcribe_local_media(
         return None
 
 
-# _get_youtube_videos(["https://www.youtube.com/watch?v=x2VHFgyawPE"])
+# _get_youtube_videos([""])
 
 # Example usage:
-# transcribe_local_media("my_video.mp4")             # project root or ~/Downloads, timestamps on
+# transcribe_local_media("How_an_American_AI_Company_Uses_Chinese_Open-Weight_Models.mp3")             # project root or ~/Downloads, timestamps on
 # transcribe_local_media("my_audio.mp3", False)       # plain text, no timestamps
 # transcribe_local_media("/absolute/path/clip.mp4")   # full path also works
