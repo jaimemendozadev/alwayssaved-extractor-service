@@ -157,7 +157,9 @@ def _download_video_from_url(
         ydl_opts: Dict[str, Any] = {
             # Format 18 (the old combined 360p stream) gets truncated by YouTube.
             # Grab separate video+audio streams and let ffmpeg merge them to mp4.
-            "format": "bv*[ext=mp4]+ba[ext=m4a]/bv*+ba/b",
+            # Prefer H.264 (avc1) video + AAC audio: QuickTime can't play VP9/AV1 in mp4.
+            "format": "bv*[vcodec^=avc1]+ba[ext=m4a]/bv*[ext=mp4]+ba[ext=m4a]/bv*+ba/b",
+            "format_sort": ["vcodec:h264", "res", "acodec:aac"],
             # Download in chunks to avoid YouTube cutting the connection early.
             "http_chunk_size": 10 * 1024 * 1024,
             "merge_output_format": "mp4",
@@ -301,9 +303,9 @@ def transcribe_local_media(
         return None
 
 
-# _get_youtube_videos([""])
+_get_youtube_videos([""])
 
 # Example usage:
-# transcribe_local_media("How_an_American_AI_Company_Uses_Chinese_Open-Weight_Models.mp3")             # project root or ~/Downloads, timestamps on
+# transcribe_local_media("")             # project root or ~/Downloads, timestamps on
 # transcribe_local_media("my_audio.mp3", False)       # plain text, no timestamps
 # transcribe_local_media("/absolute/path/clip.mp4")   # full path also works
